@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Data lake (du lieu sinh ra, khong dua vao version control)
+data/bronze/*
+data/silver/*
+data/gold/*
+!data/bronze/.gitkeep
+!data/silver/.gitkeep
+!data/gold/.gitkeep
+
+# Spark runtime artifacts
+spark-warehouse/
+metastore_db/
+derby.log
+
+# Docker Desktop / Elastic
+*.docker.env
+

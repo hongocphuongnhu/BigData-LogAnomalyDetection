@@ -1,0 +1,93 @@
+name: bigdata-log-anomaly
+
+# Kien truc ha tang Sprint 0:
+#   - spark-master + spark-worker: cum Spark standalone (khong phai local mode)
+#     de the hien dung tinh chat "distributed computing" cua de tai Big Data.
+#   - elasticsearch + kibana: noi luu ket qua gold (anomaly score, cum hanh vi)
+#     va truc quan hoa dashboard.
+#   - Data lake bronze/silver/gold la thu muc local, mount thang vao container
+#     Spark qua bind mount (khong dung MinIO/HDFS) - du dung cho quy mo do an,
+#     de debug vi co the mo file Parquet/JSONL truc tiep tren host.
+
+services:
+  spark-master:
+    image: apache/spark:${SPARK_IMAGE_TAG}
+    container_name: spark-master
+    user: root   # can root de ghi duoc vao bind mount ./data tren Windows/WSL2
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.master.Master
+      - --host
+      - spark-master
+    ports:
+      - "8080:8080"   # Spark master Web UI
+      - "7077:7077"   # Spark master RPC (spark-submit noi vao day)
+    volumes:
+      - ./data:/opt/spark/data
+      - ./jobs:/opt/spark/jobs
+    networks:
+      - lakenet
+
+  spark-worker:
+    image: apache/spark:${SPARK_IMAGE_TAG}
+    container_name: spark-worker
+    user: root
+    depends_on:
+      - spark-master
+    command:
+      - /opt/spark/bin/spark-class
+      - org.apache.spark.deploy.worker.Worker
+      - spark://spark-master:7077
+      - --cores
+      - ${SPARK_WORKER_CORES}
+      - --memory
+      - ${SPARK_WORKER_MEMORY}
+      - --webui-port
+      - "8081"
+    ports:
+      - "8081:8081"   # Spark worker Web UI
+    volumes:
+      - ./data:/opt/spark/data
+      - ./jobs:/opt/spark/jobs
+    networks:
+      - lakenet
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_STACK_VERSION}
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=${ES_JAVA_OPTS}
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - lakenet
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q '\"status\"' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:${ELASTIC_STACK_VERSION}
+    container_name: kibana
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - lakenet
+
+networks:
+  lakenet:
+    driver: bridge
+
+volumes:
+  es_data:
