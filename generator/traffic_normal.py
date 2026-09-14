@@ -129,17 +129,22 @@ def generate_normal_traffic(
     if target_total == 0:
         return []
 
+    # session_len ~ randint(1,8) -> trung binh 4.5 request/session. Dung so
+    # nay de suy ra so session can sinh, KHONG cat cung theo target_total -
+    # cat cung se lam mat traffic o cuoi khung thoi gian (session dau dung
+    # het quota se khien nhung gio sau khong con log nao), pha hong muc tieu
+    # co du lieu lien tuc nhieu gio de test Spark xu ly theo window.
+    avg_session_len = 4.5
+    num_sessions = int(target_total / avg_session_len) + 1
+
     ip_pool = _random_ip_pool(rng, size=max(10, target_total // 5))
     cache_state = {"home_primed": False, "articles": set(), "searches": set()}
 
     # Sinh moc thoi gian truoc, sort, de cache "am" dan dung theo thu tu thoi gian thuc.
-    session_starts = sorted(rng.uniform(0, duration_s) for _ in range(target_total // 3 + 1))
+    session_starts = sorted(rng.uniform(0, duration_s) for _ in range(num_sessions))
 
     records: list[dict] = []
     for session_start_s in session_starts:
-        if len(records) >= target_total:
-            break
-
         ip = rng.choice(ip_pool)
         ua = rng.choice(BROWSER_USER_AGENTS)
         session_id = new_id()
@@ -148,9 +153,6 @@ def generate_normal_traffic(
 
         t = base_dt + timedelta(seconds=session_start_s)
         for _ in range(session_len):
-            if len(records) >= target_total:
-                break
-
             event_type = rng.choices(
                 [e for e, _ in EVENT_WEIGHTS],
                 weights=[w for _, w in EVENT_WEIGHTS],
@@ -209,4 +211,4 @@ def generate_normal_traffic(
             t = t + timedelta(seconds=rng.uniform(0.5, 5.0))
 
     records.sort(key=lambda r: r["ts"])
-    return records[:target_total]
+    return records

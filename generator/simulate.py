@@ -6,6 +6,7 @@ Chay tu thu muc goc repo:
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import random
 import uuid
@@ -73,21 +74,35 @@ def main(argv=None) -> None:
     if errors:
         raise SystemExit(f"Sinh log that bai, vi pham Log Contract v1: {errors[:10]}")
 
-    out_dir = Path(args.out_dir) / f"dt={base_dt.date().isoformat()}"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    file_name = f"part-{base_dt.strftime('%Y%m%dT%H%M%S')}-{uuid.uuid4().hex[:8]}.jsonl"
-    out_path = out_dir / file_name
+    # Rotation theo gio: dt=YYYY-MM-DD/hour=HH/part-*.jsonl - ts co dinh dang
+    # "YYYY-MM-DDTHH:MM:SS.mmmZ" nen lay date/hour bang cach slice truc tiep,
+    # khong can parse lai datetime.
+    def hour_key(r: dict) -> tuple[str, str]:
+        ts = r["ts"]
+        return ts[0:10], ts[11:13]
 
-    with out_path.open("w", encoding="utf-8") as f:
-        for r in records:
-            f.write(json.dumps({k: r[k] for k in FIELD_ORDER}, ensure_ascii=False))
-            f.write("\n")
+    out_root = Path(args.out_dir)
+    written_files = []
+    for (date_str, hour_str), group_iter in itertools.groupby(records, key=hour_key):
+        group = list(group_iter)
+        out_dir = out_root / f"dt={date_str}" / f"hour={hour_str}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        file_name = f"part-{date_str.replace('-', '')}T{hour_str}0000-{uuid.uuid4().hex[:8]}.jsonl"
+        out_path = out_dir / file_name
+
+        with out_path.open("w", encoding="utf-8") as f:
+            for r in group:
+                f.write(json.dumps({k: r[k] for k in FIELD_ORDER}, ensure_ascii=False))
+                f.write("\n")
+        written_files.append((out_path, len(group)))
 
     normal_count = sum(1 for r in records if not r["is_anomaly"])
     counts = Counter(r["anomaly_label"] for r in records if r["is_anomaly"])
     cache_hits = sum(1 for r in records if r["cache_status"] == "HIT")
 
-    print(f"Da sinh {len(records)} dong log -> {out_path}")
+    print(f"Da sinh {len(records)} dong log, chia thanh {len(written_files)} file theo gio:")
+    for path, n in written_files:
+        print(f"  {path} ({n} dong)")
     print(f"  normal      : {normal_count}")
     for label in ("brute_force", "sqli", "scan", "ddos"):
         if counts.get(label):
