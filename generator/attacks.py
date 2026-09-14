@@ -1,7 +1,9 @@
 """Cac attack injector sinh log CO NHAN cho Log Contract v1.
 
-Moi injector tra ve list[dict] cho MOT chien dich tan cong (mot attack_id),
-co the goc tu mot hoac nhieu src_ip (vi du ddos = botnet).
+Moi injector tra ve list[dict] cho MOT chien dich tan cong. Tat ca deu
+cache_status == "MISS" boi vi target (id/query) cua attacker khong trung
+voi key da duoc cache "am" boi traffic binh thuong - day cung la mot dau
+hieu phat hien bat thuong theo goc nhin Cache-Aside (ty le MISS bat thuong cao).
 """
 from __future__ import annotations
 
@@ -26,7 +28,6 @@ SQLI_PAYLOADS = [
     "1 AND SLEEP(5)",
     "admin'--",
 ]
-SQLI_TARGETS = [("/product", "id"), ("/search", "q"), ("/login", "username")]
 
 SCAN_PATHS = [
     "/.env", "/.git/config", "/wp-login.php", "/phpmyadmin/", "/admin/",
@@ -50,8 +51,7 @@ def _attack_window(duration_s: float, rng: random.Random, span_s: float) -> floa
 
 
 def generate_brute_force(base_dt: datetime, duration_s: float, rng: random.Random) -> list[dict]:
-    attack_id = new_id()
-    src_ip = _random_public_ip(rng)
+    ip = _random_public_ip(rng)
     ua = rng.choice(SCRIPT_USER_AGENTS)
     username = rng.choice(["admin", "root", "administrator", "test"])
 
@@ -65,23 +65,24 @@ def generate_brute_force(base_dt: datetime, duration_s: float, rng: random.Rando
     session_id = new_id()
     for i in range(n_attempts):
         is_last = i == n_attempts - 1
-        status = 200 if (breached and is_last) else 401
+        status_code = 200 if (breached and is_last) else 401
         records.append(
             make_record(
-                timestamp=t,
-                src_ip=src_ip,
+                ts=t,
+                session_id=session_id,
+                event_type="login",
                 method="POST",
                 path="/login",
-                query=None,
-                protocol="HTTP/1.1",
-                status=status,
-                bytes_=rng.randint(200, 600),
-                response_time_ms=rng.randint(10, 60),
+                article_id=None,
+                status_code=status_code,
+                latency_ms=rng.randint(10, 60),
+                cache_status="MISS",
+                bytes_out=rng.randint(200, 600),
+                ip=ip,
                 user_agent=ua,
-                referer=None,
-                session_id=session_id,
-                label="brute_force",
-                attack_id=attack_id,
+                is_anomaly=True,
+                user_id=username if (breached and is_last) else None,
+                anomaly_label="brute_force",
             )
         )
         t = t + timedelta(seconds=spacing)
@@ -89,8 +90,7 @@ def generate_brute_force(base_dt: datetime, duration_s: float, rng: random.Rando
 
 
 def generate_sqli(base_dt: datetime, duration_s: float, rng: random.Random) -> list[dict]:
-    attack_id = new_id()
-    src_ip = _random_public_ip(rng)
+    ip = _random_public_ip(rng)
     ua = rng.choice(SCRIPT_USER_AGENTS)
 
     n = rng.randint(10, 40)
@@ -101,26 +101,32 @@ def generate_sqli(base_dt: datetime, duration_s: float, rng: random.Random) -> l
     t = base_dt + timedelta(seconds=start_offset)
     session_id = new_id()
     for _ in range(n):
-        path, param = rng.choice(SQLI_TARGETS)
         payload = rng.choice(SQLI_PAYLOADS)
-        method = "POST" if path == "/login" else "GET"
-        status = rng.choices([200, 500, 403], weights=[70, 20, 10], k=1)[0]
+        target_article = rng.random() < 0.5
+        if target_article:
+            event_type = "view_article"
+            path = f"/article/{payload}"  # id khong hop le -> article_id=None
+        else:
+            event_type = "search"
+            path = f"/search?q={payload}"
+        status_code = rng.choices([200, 500, 403], weights=[70, 20, 10], k=1)[0]
         records.append(
             make_record(
-                timestamp=t,
-                src_ip=src_ip,
-                method=method,
-                path=path,
-                query=f"{param}={payload}",
-                protocol="HTTP/1.1",
-                status=status,
-                bytes_=rng.randint(200, 3000),
-                response_time_ms=rng.randint(20, 400),
-                user_agent=ua,
-                referer=None,
+                ts=t,
                 session_id=session_id,
-                label="sqli",
-                attack_id=attack_id,
+                event_type=event_type,
+                method="GET",
+                path=path,
+                article_id=None,
+                status_code=status_code,
+                latency_ms=rng.randint(20, 400),
+                cache_status="MISS",
+                bytes_out=rng.randint(200, 3000),
+                ip=ip,
+                user_agent=ua,
+                is_anomaly=True,
+                user_id=None,
+                anomaly_label="sqli",
             )
         )
         t = t + timedelta(seconds=spacing)
@@ -128,8 +134,7 @@ def generate_sqli(base_dt: datetime, duration_s: float, rng: random.Random) -> l
 
 
 def generate_scan(base_dt: datetime, duration_s: float, rng: random.Random) -> list[dict]:
-    attack_id = new_id()
-    src_ip = _random_public_ip(rng)
+    ip = _random_public_ip(rng)
     ua = rng.choice(SCRIPT_USER_AGENTS)
 
     targets = SCAN_PATHS * rng.randint(1, 2)
@@ -141,23 +146,24 @@ def generate_scan(base_dt: datetime, duration_s: float, rng: random.Random) -> l
     t = base_dt + timedelta(seconds=start_offset)
     session_id = new_id()
     for path in targets:
-        status = rng.choices([404, 200, 403], weights=[85, 8, 7], k=1)[0]
+        status_code = rng.choices([404, 200, 403], weights=[85, 8, 7], k=1)[0]
         records.append(
             make_record(
-                timestamp=t,
-                src_ip=src_ip,
+                ts=t,
+                session_id=session_id,
+                event_type="other",
                 method="GET",
                 path=path,
-                query=None,
-                protocol="HTTP/1.1",
-                status=status,
-                bytes_=rng.randint(100, 800),
-                response_time_ms=rng.randint(5, 40),
+                article_id=None,
+                status_code=status_code,
+                latency_ms=rng.randint(5, 40),
+                cache_status="MISS",
+                bytes_out=rng.randint(100, 800),
+                ip=ip,
                 user_agent=ua,
-                referer=None,
-                session_id=session_id,
-                label="scan",
-                attack_id=attack_id,
+                is_anomaly=True,
+                user_id=None,
+                anomaly_label="scan",
             )
         )
         t = t + timedelta(seconds=spacing)
@@ -165,40 +171,45 @@ def generate_scan(base_dt: datetime, duration_s: float, rng: random.Random) -> l
 
 
 def generate_ddos(base_dt: datetime, duration_s: float, rng: random.Random) -> list[dict]:
-    attack_id = new_id()
+    """Cache-busting flood: moi request nham vao mot article_id CHUA TUNG duoc
+    cache (id lay tu khong gian rieng >= 100000), nen cache_status luon la
+    MISS - mo phong dung kieu tan cong khai thac diem yeu cua Cache-Aside
+    (lam tran luong truy van xuong nguon du lieu goc)."""
     botnet = [_random_public_ip(rng) for _ in range(rng.randint(20, 60))]
     ua_pool = SCRIPT_USER_AGENTS + [
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     ]
-    target_path = rng.choice(["/", "/api/search", "/product/1"])
 
     burst_s = rng.uniform(5, 20)
     total_requests = rng.randint(400, 1200)
     start_offset = _attack_window(duration_s, rng, burst_s)
+    id_base = rng.randint(100000, 900000)
 
     records = []
     session_id = new_id()
     for i in range(total_requests):
-        progress = i / total_requests  # 0.0 -> 1.0, dung de mo phong server bi qua tai dan
+        progress = i / total_requests  # 0.0 -> 1.0, mo phong server bi qua tai dan
         t = base_dt + timedelta(seconds=start_offset + progress * burst_s)
-        status = 200 if rng.random() > progress else rng.choice([503, 499])
-        response_time_ms = int(50 + progress * rng.uniform(1500, 5000))
+        status_code = 200 if rng.random() > progress else rng.choice([503, 499])
+        latency_ms = int(50 + progress * rng.uniform(1500, 5000))
+        article_id = id_base + i
         records.append(
             make_record(
-                timestamp=t,
-                src_ip=rng.choice(botnet),
-                method="GET",
-                path=target_path,
-                query=None,
-                protocol="HTTP/1.1",
-                status=status,
-                bytes_=rng.randint(0, 500),
-                response_time_ms=response_time_ms,
-                user_agent=rng.choice(ua_pool),
-                referer=None,
+                ts=t,
                 session_id=session_id,
-                label="ddos",
-                attack_id=attack_id,
+                event_type="view_article",
+                method="GET",
+                path=f"/article/{article_id}",
+                article_id=article_id,
+                status_code=status_code,
+                latency_ms=latency_ms,
+                cache_status="MISS",
+                bytes_out=rng.randint(0, 500),
+                ip=rng.choice(botnet),
+                user_agent=rng.choice(ua_pool),
+                is_anomaly=True,
+                user_id=None,
+                anomaly_label="ddos",
             )
         )
     return records

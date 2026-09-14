@@ -1,4 +1,8 @@
-"""Sinh traffic HTTP binh thuong (label == 'normal') cho Log Contract v1."""
+"""Sinh traffic HTTP binh thuong (is_anomaly == False) cho Log Contract v1.
+
+Domain: trang doc bai viet (article site) co tang cache-aside truoc DB -
+moi lan xem bai viet se tra cuu cache theo article_id (HIT/MISS).
+"""
 from __future__ import annotations
 
 import random
@@ -16,35 +20,30 @@ BROWSER_USER_AGENTS = [
     "Mozilla/5.0 (Linux; Android 14; SM-S928B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36",
 ]
 
-# (path_template, weight, is_static)
-NORMAL_PATHS = [
-    ("/", 20, False),
-    ("/home", 10, False),
-    ("/products", 15, False),
-    ("/product/{id}", 20, False),
-    ("/cart", 8, False),
-    ("/checkout", 4, False),
-    ("/login", 5, False),
-    ("/logout", 3, False),
-    ("/api/search", 10, False),
-    ("/about", 3, False),
-    ("/contact", 3, False),
-    ("/static/style.css", 5, True),
-    ("/static/app.js", 5, True),
-    ("/favicon.ico", 3, True),
-]
+KNOWN_USER_IDS = [f"u{i}" for i in range(1, 31)]
+
+# Bai viet "hot" duoc doc nhieu (de cache am len nhanh) vs. long-tail hiem gap.
+HOT_ARTICLE_IDS = list(range(1, 21))
+LONG_TAIL_ARTICLE_IDS = list(range(21, 301))
 
 SEARCH_TERMS = [
-    "shoes", "laptop", "phone", "book", "chair", "table",
-    "watch", "camera", "headphones", "bag",
+    "thoi su", "the thao", "cong nghe", "kinh te", "giai tri",
+    "suc khoe", "giao duc", "du lich", "am thuc", "oto xe may",
 ]
 
-EXTERNAL_REFERERS = [
-    None,
-    "https://www.google.com/",
-    "https://www.bing.com/",
-    None,
+# (event_type, weight)
+EVENT_WEIGHTS = [
+    ("list_articles", 20),
+    ("view_article", 45),
+    ("search", 15),
+    ("login", 4),
+    ("logout", 3),
+    ("static_asset", 10),
+    ("other", 3),
 ]
+
+STATIC_PATHS = ["/static/style.css", "/static/app.js", "/favicon.ico"]
+OTHER_PATHS = ["/about", "/contact"]
 
 
 def _random_ip_pool(rng: random.Random, size: int) -> list[str]:
@@ -57,41 +56,59 @@ def _random_ip_pool(rng: random.Random, size: int) -> list[str]:
     return ips
 
 
-def _pick_path(rng: random.Random) -> tuple[str, Optional[str], bool]:
-    template, _, is_static = rng.choices(
-        NORMAL_PATHS,
-        weights=[w for _, w, _ in NORMAL_PATHS],
-        k=1,
-    )[0]
-
-    query = None
-    path = template
-    if template == "/product/{id}":
-        path = f"/product/{rng.randint(1, 500)}"
-    elif template == "/api/search":
-        query = f"q={rng.choice(SEARCH_TERMS)}"
-
-    return path, query, is_static
+def _pick_article_id(rng: random.Random) -> int:
+    if rng.random() < 0.8:
+        return rng.choice(HOT_ARTICLE_IDS)
+    return rng.choice(LONG_TAIL_ARTICLE_IDS)
 
 
-def _status_for(path: str, is_static: bool, rng: random.Random) -> int:
-    if is_static:
-        return rng.choices([200, 304], weights=[80, 20], k=1)[0]
-    if path.startswith("/product/") and rng.random() < 0.05:
+def _cache_lookup(event_type: str, key: Optional[str], cache_state: dict, rng: random.Random) -> str:
+    """Mo phong Cache-Aside: tra ve 'HIT' hoac 'MISS' va cap nhat cache_state."""
+    if event_type == "static_asset":
+        return "HIT" if rng.random() < 0.95 else "MISS"
+
+    if event_type in ("login", "logout"):
+        return "MISS"  # request mutating, khong qua cache
+
+    if event_type == "list_articles":
+        primed = cache_state["home_primed"]
+        cache_state["home_primed"] = True
+        return "HIT" if primed and rng.random() < 0.85 else "MISS"
+
+    if event_type == "view_article":
+        seen = cache_state["articles"]
+        was_seen = key in seen
+        seen.add(key)
+        if was_seen:
+            return "MISS" if rng.random() < 0.10 else "HIT"  # 10% eviction/TTL expiry
+        return "MISS"
+
+    if event_type == "search":
+        seen = cache_state["searches"]
+        was_seen = key in seen
+        seen.add(key)
+        if was_seen:
+            return "HIT" if rng.random() < 0.30 else "MISS"
+        return "MISS"
+
+    return "MISS"  # "other"
+
+
+def _status_code_for(event_type: str, rng: random.Random) -> int:
+    if event_type == "view_article" and rng.random() < 0.03:
         return 404
     return rng.choices([200, 301, 404, 500], weights=[90, 3, 5, 2], k=1)[0]
 
 
-def _response_time_ms(is_static: bool, path: str, rng: random.Random) -> int:
-    if is_static:
+def _latency_ms_for(event_type: str, cache_status: str, rng: random.Random) -> int:
+    if event_type == "static_asset":
         return rng.randint(5, 30)
-    if path == "/checkout":
-        return rng.randint(100, 400)
-    return rng.randint(20, 300)
+    base = rng.randint(20, 300)
+    return base if cache_status == "HIT" else base + rng.randint(50, 200)
 
 
-def _bytes_for(is_static: bool, rng: random.Random) -> int:
-    if is_static:
+def _bytes_out_for(event_type: str, rng: random.Random) -> int:
+    if event_type == "static_asset":
         return rng.randint(200, 5000)
     return rng.randint(500, 20000)
 
@@ -105,50 +122,91 @@ def generate_normal_traffic(
     """Sinh traffic binh thuong bang mo hinh 'visitor session'.
 
     Moi session la mot IP gui 1-8 request lien tiep, cach nhau vai giay,
-    voi session_id chung va referer noi tiep tu request truoc.
+    voi session_id chung. Mot cache_state duoc chia se xuyen suot timeline
+    de mo phong cache 'am' dan theo thoi gian (Cache-Aside).
     """
     target_total = max(0, int(duration_s * rate_per_s))
     if target_total == 0:
         return []
 
     ip_pool = _random_ip_pool(rng, size=max(10, target_total // 5))
+    cache_state = {"home_primed": False, "articles": set(), "searches": set()}
+
+    # Sinh moc thoi gian truoc, sort, de cache "am" dan dung theo thu tu thoi gian thuc.
+    session_starts = sorted(rng.uniform(0, duration_s) for _ in range(target_total // 3 + 1))
 
     records: list[dict] = []
-    while len(records) < target_total:
+    for session_start_s in session_starts:
+        if len(records) >= target_total:
+            break
+
         ip = rng.choice(ip_pool)
         ua = rng.choice(BROWSER_USER_AGENTS)
         session_id = new_id()
-        session_start = base_dt + timedelta(seconds=rng.uniform(0, duration_s))
+        user_id = rng.choice(KNOWN_USER_IDS) if rng.random() < 0.4 else None
         session_len = rng.randint(1, 8)
 
-        t = session_start
-        referer = rng.choice(EXTERNAL_REFERERS)
+        t = base_dt + timedelta(seconds=session_start_s)
         for _ in range(session_len):
             if len(records) >= target_total:
                 break
-            path, query, is_static = _pick_path(rng)
-            status = _status_for(path, is_static, rng)
-            method = "POST" if path in ("/login", "/checkout") and rng.random() < 0.5 else "GET"
+
+            event_type = rng.choices(
+                [e for e, _ in EVENT_WEIGHTS],
+                weights=[w for _, w in EVENT_WEIGHTS],
+                k=1,
+            )[0]
+
+            article_id = None
+            cache_key = None
+            if event_type == "view_article":
+                article_id = _pick_article_id(rng)
+                path = f"/article/{article_id}"
+                method = "GET"
+                cache_key = article_id
+            elif event_type == "list_articles":
+                path = "/" if rng.random() < 0.5 else "/articles"
+                method = "GET"
+            elif event_type == "search":
+                term = rng.choice(SEARCH_TERMS)
+                path = f"/search?q={term}"
+                method = "GET"
+                cache_key = term
+            elif event_type == "login":
+                path = "/login"
+                method = "POST"
+            elif event_type == "logout":
+                path = "/logout"
+                method = "POST"
+            elif event_type == "static_asset":
+                path = rng.choice(STATIC_PATHS)
+                method = "GET"
+            else:  # other
+                path = rng.choice(OTHER_PATHS)
+                method = "GET"
+
+            cache_status = _cache_lookup(event_type, cache_key, cache_state, rng)
 
             records.append(
                 make_record(
-                    timestamp=t,
-                    src_ip=ip,
+                    ts=t,
+                    session_id=session_id,
+                    event_type=event_type,
                     method=method,
                     path=path,
-                    query=query,
-                    protocol="HTTP/1.1",
-                    status=status,
-                    bytes_=_bytes_for(is_static, rng),
-                    response_time_ms=_response_time_ms(is_static, path, rng),
+                    article_id=article_id,
+                    status_code=_status_code_for(event_type, rng),
+                    latency_ms=_latency_ms_for(event_type, cache_status, rng),
+                    cache_status=cache_status,
+                    bytes_out=_bytes_out_for(event_type, rng),
+                    ip=ip,
                     user_agent=ua,
-                    referer=referer,
-                    session_id=session_id,
-                    label="normal",
-                    attack_id=None,
+                    is_anomaly=False,
+                    user_id=user_id,
+                    anomaly_label=None,
                 )
             )
-            referer = f"https://shop.example.com{path}"
             t = t + timedelta(seconds=rng.uniform(0.5, 5.0))
 
-    return records
+    records.sort(key=lambda r: r["ts"])
+    return records[:target_total]

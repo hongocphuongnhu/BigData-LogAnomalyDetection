@@ -67,7 +67,7 @@ def main(argv=None) -> None:
         for _ in range(args.attack_repeat):
             records.extend(generator_fn(base_dt, duration_s, rng))
 
-    records.sort(key=lambda r: r["timestamp"])
+    records.sort(key=lambda r: r["ts"])
 
     errors = [e for r in records for e in validate(r)]
     if errors:
@@ -83,11 +83,16 @@ def main(argv=None) -> None:
             f.write(json.dumps({k: r[k] for k in FIELD_ORDER}, ensure_ascii=False))
             f.write("\n")
 
-    counts = Counter(r["label"] for r in records)
+    normal_count = sum(1 for r in records if not r["is_anomaly"])
+    counts = Counter(r["anomaly_label"] for r in records if r["is_anomaly"])
+    cache_hits = sum(1 for r in records if r["cache_status"] == "HIT")
+
     print(f"Da sinh {len(records)} dong log -> {out_path}")
-    for label in ("normal", "brute_force", "sqli", "scan", "ddos"):
+    print(f"  normal      : {normal_count}")
+    for label in ("brute_force", "sqli", "scan", "ddos"):
         if counts.get(label):
             print(f"  {label:12s}: {counts[label]}")
+    print(f"  cache HIT ratio: {cache_hits}/{len(records)} ({100 * cache_hits / len(records):.1f}%)")
 
 
 if __name__ == "__main__":

@@ -2,88 +2,94 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "http_access_log.v1",
   "title": "HTTP Access Log - Log Contract v1",
-  "description": "Contract cho bronze layer: moi dong JSONL sinh ra boi traffic simulator (generator/) va duoc doc boi Spark ingest job phai tuan theo schema nay.",
+  "description": "Contract cho bronze layer: moi dong JSONL sinh ra boi traffic simulator (generator/) va duoc doc boi Spark ingest job phai tuan theo schema nay. article_id + cache_status gan truc tiep voi co che Cache-Aside (mon NoSQL).",
   "type": "object",
   "required": [
-    "schema_version",
-    "log_id",
-    "timestamp",
-    "src_ip",
+    "ts",
+    "trace_id",
+    "session_id",
+    "user_id",
+    "event_type",
     "method",
     "path",
-    "protocol",
-    "status",
-    "bytes",
-    "response_time_ms",
+    "article_id",
+    "status_code",
+    "latency_ms",
+    "cache_status",
+    "bytes_out",
+    "ip",
     "user_agent",
-    "session_id",
-    "label",
-    "attack_id"
+    "is_anomaly",
+    "anomaly_label"
   ],
   "additionalProperties": false,
   "properties": {
-    "schema_version": {
-      "type": "string",
-      "const": "1.0"
-    },
-    "log_id": {
-      "type": "string",
-      "description": "UUID4, duy nhat cho moi dong log - dung de dedup khi ingest."
-    },
-    "timestamp": {
+    "ts": {
       "type": "string",
       "description": "ISO 8601 UTC, do chinh xac milisecond. Vi du: 2026-01-15T10:23:45.123Z"
     },
-    "src_ip": {
-      "type": "string"
+    "trace_id": {
+      "type": "string",
+      "description": "UUID4, duy nhat cho moi dong log - dung de dedup khi ingest."
+    },
+    "session_id": {
+      "type": "string",
+      "description": "UUID4 nhom cac request cung mot 'phien' (visitor session hoac attack burst)."
+    },
+    "user_id": {
+      "type": ["string", "null"],
+      "description": "Id nguoi dung da dang nhap. Null neu request la anonymous (chua dang nhap)."
+    },
+    "event_type": {
+      "type": "string",
+      "enum": ["view_article", "list_articles", "search", "login", "logout", "static_asset", "other"],
+      "description": "Phan loai nghiep vu cua request, doc lap voi viec request co bat thuong hay khong."
     },
     "method": {
       "type": "string",
       "enum": ["GET", "POST", "PUT", "DELETE", "HEAD"]
     },
     "path": {
-      "type": "string"
-    },
-    "query": {
-      "type": ["string", "null"],
-      "description": "Chuoi query string tho (khong bao gom '?'). Null neu request khong co query param."
-    },
-    "protocol": {
       "type": "string",
-      "example": "HTTP/1.1"
+      "description": "Duong dan request, bao gom ca query string neu co (vi du /search?q=laptop)."
     },
-    "status": {
+    "article_id": {
+      "type": ["integer", "null"],
+      "description": "Id bai viet duoc truy cap (event_type == 'view_article'). Null neu request khong gan voi mot bai viet cu the, hoac id khong hop le (vi du payload SQLi)."
+    },
+    "status_code": {
       "type": "integer",
       "minimum": 100,
       "maximum": 599
     },
-    "bytes": {
+    "latency_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "cache_status": {
+      "type": "string",
+      "enum": ["HIT", "MISS"],
+      "description": "Ket qua tra cuu cache theo co che Cache-Aside: HIT = phuc vu tu cache, MISS = phai truy van nguon (va nap lai cache)."
+    },
+    "bytes_out": {
       "type": "integer",
       "minimum": 0,
       "description": "Kich thuoc response body (bytes)."
     },
-    "response_time_ms": {
-      "type": "integer",
-      "minimum": 0
+    "ip": {
+      "type": "string"
     },
     "user_agent": {
       "type": "string"
     },
-    "referer": {
-      "type": ["string", "null"]
+    "is_anomaly": {
+      "type": "boolean",
+      "description": "Nhan ground-truth: true neu dong log thuoc mot chuoi hanh vi bat thuong."
     },
-    "session_id": {
-      "type": "string",
-      "description": "UUID4 nhom cac request cung mot 'phien' (visitor session hoac attack burst)."
-    },
-    "label": {
-      "type": "string",
-      "enum": ["normal", "brute_force", "sqli", "scan", "ddos"],
-      "description": "Nhan ground-truth do trinh sinh log gan, dung de huan luyen/danh gia model phat hien bat thuong."
-    },
-    "attack_id": {
+    "anomaly_label": {
       "type": ["string", "null"],
-      "description": "UUID4 nhom tat ca cac dong log thuoc CUNG mot chien dich tan cong. Bat buoc la null khi label == 'normal', va bat buoc khac null khi label != 'normal'."
+      "enum": [null, "brute_force", "sqli", "scan", "ddos"],
+      "description": "Loai bat thuong cu the. Bat buoc null khi is_anomaly == false, va bat buoc khac null (mot trong 4 gia tri) khi is_anomaly == true."
     }
   }
 }
