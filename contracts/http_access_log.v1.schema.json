@@ -1,0 +1,89 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "http_access_log.v1",
+  "title": "HTTP Access Log - Log Contract v1",
+  "description": "Contract cho bronze layer: moi dong JSONL sinh ra boi traffic simulator (generator/) va duoc doc boi Spark ingest job phai tuan theo schema nay.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "log_id",
+    "timestamp",
+    "src_ip",
+    "method",
+    "path",
+    "protocol",
+    "status",
+    "bytes",
+    "response_time_ms",
+    "user_agent",
+    "session_id",
+    "label",
+    "attack_id"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "log_id": {
+      "type": "string",
+      "description": "UUID4, duy nhat cho moi dong log - dung de dedup khi ingest."
+    },
+    "timestamp": {
+      "type": "string",
+      "description": "ISO 8601 UTC, do chinh xac milisecond. Vi du: 2026-01-15T10:23:45.123Z"
+    },
+    "src_ip": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string",
+      "enum": ["GET", "POST", "PUT", "DELETE", "HEAD"]
+    },
+    "path": {
+      "type": "string"
+    },
+    "query": {
+      "type": ["string", "null"],
+      "description": "Chuoi query string tho (khong bao gom '?'). Null neu request khong co query param."
+    },
+    "protocol": {
+      "type": "string",
+      "example": "HTTP/1.1"
+    },
+    "status": {
+      "type": "integer",
+      "minimum": 100,
+      "maximum": 599
+    },
+    "bytes": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Kich thuoc response body (bytes)."
+    },
+    "response_time_ms": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "user_agent": {
+      "type": "string"
+    },
+    "referer": {
+      "type": ["string", "null"]
+    },
+    "session_id": {
+      "type": "string",
+      "description": "UUID4 nhom cac request cung mot 'phien' (visitor session hoac attack burst)."
+    },
+    "label": {
+      "type": "string",
+      "enum": ["normal", "brute_force", "sqli", "scan", "ddos"],
+      "description": "Nhan ground-truth do trinh sinh log gan, dung de huan luyen/danh gia model phat hien bat thuong."
+    },
+    "attack_id": {
+      "type": ["string", "null"],
+      "description": "UUID4 nhom tat ca cac dong log thuoc CUNG mot chien dich tan cong. Bat buoc la null khi label == 'normal', va bat buoc khac null khi label != 'normal'."
+    }
+  }
+}
