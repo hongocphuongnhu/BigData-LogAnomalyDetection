@@ -1,14 +1,17 @@
 ---
 phase: 10
 title: "Phase 10: Báo cáo Word + slide"
-status: todo
+status: cancelled
 priority: P1
 effort: "≈3h mỗi người (rải suốt ngày)"
 owner: "Định + Như"
 dependencies: []
 ---
 
-# Phase 10: Báo cáo Word + slide
+# Phase 10: Báo cáo Word + slide — ĐÃ HUỶ
+
+> **Huỷ ngày 13/10:** plan chỉ còn phạm vi demo bằng code. Như đã có Word, slide, PDF và video dự phòng;
+> mọi cập nhật số liệu vào tài liệu do Như tự làm, không nằm trong plan này.
 
 ## Goal
 

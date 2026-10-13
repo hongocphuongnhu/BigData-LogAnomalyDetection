@@ -1,7 +1,7 @@
 ---
 phase: 8
 title: "Phase 8: Dashboard Kibana + alert rule"
-status: todo
+status: in-progress
 priority: P1
 effort: "2h"
 owner: "Như"
@@ -51,3 +51,10 @@ Cần encryption key đã đặt ở Phase 01.
 
 - `docker compose down -v` → `up` → `es_setup` → export → `kibana_import`: dashboard hiển thị lại đầy đủ.
 - Rule chuyển trạng thái "Active" và có bản ghi trong `alert-history` khi có tấn công.
+
+## Cập nhật 13/10 (theo đối chiếu của Như)
+
+Đã có: 2 dashboard, 18 panel, rule và lịch sử cảnh báo, import vào space mới đã kiểm chứng. Còn thiếu (D5):
+- Đồng bộ các panel với cột batch mới (`score`, `ref_cluster`, `top_feature`/`reason`, `severity`, `is_alert`).
+- Panel so sánh nhãn thật với dự đoán: dùng `is_anomaly` (nhãn thật, chỉ sim) so với `is_alert` (dự đoán).
+- Sau khi sửa, export lại `kibana/dashboards.ndjson`.

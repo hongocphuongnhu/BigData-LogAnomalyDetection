@@ -1,7 +1,7 @@
 ---
 phase: 5
 title: "Phase 5: HDFS data lake"
-status: todo
+status: in-progress
 priority: P1
 effort: "1.5h"
 owner: "Như"
@@ -44,3 +44,8 @@ Local disk chỉ dùng khi dev.
 - `docker compose exec namenode hdfs dfs -ls -R /lake | head` thấy partition `dt=/hour=`.
 - Ingest trên HDFS in ra cùng số dòng như khi chạy local.
 - Nếu job đọc HDFS lỗi thì kiểm tra `fs.defaultFS` và `datanode` có trong network `lakenet`.
+
+## Cập nhật 13/10
+
+Đã có script upload/chạy job và ảnh minh chứng; local và HDFS khớp 61.643 dòng. Còn (D6, tuỳ chọn cho demo):
+đưa `raw/nasa`, `silver/nasa_access`, `gold/*` lên HDFS. Local đã đủ để demo chạy được.
