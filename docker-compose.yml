@@ -1,17 +1,24 @@
 name: bigdata-log-anomaly
 
-# Kien truc ha tang Sprint 0:
+# Kien truc ha tang:
 #   - spark-master + spark-worker: cum Spark standalone (khong phai local mode)
 #     de the hien dung tinh chat "distributed computing" cua de tai Big Data.
-#   - elasticsearch + kibana: noi luu ket qua gold (anomaly score, cum hanh vi)
-#     va truc quan hoa dashboard.
-#   - Data lake bronze/silver/gold la thu muc local, mount thang vao container
-#     Spark qua bind mount (khong dung MinIO/HDFS) - du dung cho quy mo do an,
-#     de debug vi co the mo file Parquet/JSONL truc tiep tren host.
+#   - namenode + datanode: HDFS lam data lake bronze/silver/gold khi demo.
+#     Thu muc local ./data van duoc mount vao container Spark de dev/debug
+#     nhanh (mo truc tiep Parquet/JSONL tren host); moi job nhan duong dan qua
+#     tham so nen doi sang hdfs://namenode:9000/lake/... khong can sua code.
+#   - elasticsearch + kibana: tang serving - log da lam sach, feature, anomaly
+#     score, canh bao; Kibana dung dashboard va alert rule.
+# Bien moi truong lay tu .env (copy tu .env.example).
 
 services:
   spark-master:
-    image: apache/spark:${SPARK_IMAGE_TAG}
+    image: bigdata-log-anomaly/spark:${SPARK_IMAGE_TAG}
+    build:
+      context: ./docker/spark
+      args:
+        SPARK_IMAGE_TAG: ${SPARK_IMAGE_TAG}
+        ES_SPARK_VERSION: ${ELASTIC_STACK_VERSION}   # connector cung version voi ES
     container_name: spark-master
     user: root   # can root de ghi duoc vao bind mount ./data tren Windows/WSL2
     command:
@@ -20,8 +27,10 @@ services:
       - --host
       - spark-master
     ports:
-      - "8080:8080"   # Spark master Web UI
-      - "7077:7077"   # Spark master RPC (spark-submit noi vao day)
+      # Cong host doi duoc qua .env neu trung voi project khac tren may.
+      # 7077 (RPC) khong publish: spark-submit chay ben trong container.
+      - "${SPARK_MASTER_UI_PORT:-8080}:8080"   # Spark master Web UI
+      - "${SPARK_DRIVER_UI_PORT:-4040}:4040"   # Spark application UI (job dang chay)
     volumes:
       - ./data:/opt/spark/data
       - ./jobs:/opt/spark/jobs
@@ -29,7 +38,7 @@ services:
       - lakenet
 
   spark-worker:
-    image: apache/spark:${SPARK_IMAGE_TAG}
+    image: bigdata-log-anomaly/spark:${SPARK_IMAGE_TAG}
     container_name: spark-worker
     user: root
     depends_on:
@@ -45,10 +54,48 @@ services:
       - --webui-port
       - "8081"
     ports:
-      - "8081:8081"   # Spark worker Web UI
+      - "${SPARK_WORKER_UI_PORT:-8081}:8081"   # Spark worker Web UI
     volumes:
       - ./data:/opt/spark/data
       - ./jobs:/opt/spark/jobs
+    networks:
+      - lakenet
+
+  namenode:
+    image: bde2020/hadoop-namenode:${HADOOP_IMAGE_TAG}
+    container_name: namenode
+    environment:
+      - CLUSTER_NAME=loglake
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      # 1 datanode duy nhat -> replication 1, tat permission de Spark (root)
+      # ghi duoc vao /lake ma khong can tao user HDFS rieng.
+      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_permissions_enabled=false
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+    ports:
+      - "9870:9870"   # NameNode Web UI
+      - "9000:9000"   # HDFS RPC
+    volumes:
+      - hdfs_namenode:/hadoop/dfs/name
+      - ./data:/data:ro   # nguon cho `hdfs dfs -put` (scripts/hdfs_put.*)
+    networks:
+      - lakenet
+
+  datanode:
+    image: bde2020/hadoop-datanode:${HADOOP_IMAGE_TAG}
+    container_name: datanode
+    depends_on:
+      - namenode
+    environment:
+      - SERVICE_PRECONDITION=namenode:9870
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HDFS_CONF_dfs_replication=1
+      - HDFS_CONF_dfs_permissions_enabled=false
+      - HDFS_CONF_dfs_webhdfs_enabled=true
+    ports:
+      - "9864:9864"   # DataNode Web UI
+    volumes:
+      - hdfs_datanode:/hadoop/dfs/data
     networks:
       - lakenet
 
@@ -80,6 +127,9 @@ services:
         condition: service_healthy
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      # Bat buoc de dung Alerting (rule + connector): Kibana can khoa ma hoa
+      # saved object, thieu khoa nay muc Rules se bi khoa.
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY}
     ports:
       - "5601:5601"
     networks:
@@ -91,3 +141,5 @@ networks:
 
 volumes:
   es_data:
+  hdfs_namenode:
+  hdfs_datanode:

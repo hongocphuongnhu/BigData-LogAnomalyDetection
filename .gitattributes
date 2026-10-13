@@ -1,0 +1,7 @@
+# Script/config chay trong container Linux phai giu LF, ke ca khi clone tren
+# Windows (core.autocrlf=true se doi sang CRLF -> sh bao loi "\r: not found").
+*.sh        text eol=lf
+Dockerfile  text eol=lf
+*.py        text eol=lf
+*.yml       text eol=lf
+.env*       text eol=lf

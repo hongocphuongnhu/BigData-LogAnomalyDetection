@@ -7,19 +7,16 @@ vao khu quarantine, khu trung theo trace_id, parse `ts` thanh timestamp
 thuc de phuc vu windowed processing sau nay, roi ghi Parquet vao silver,
 partition theo dt/hour (giong bronze) de query/prune hieu qua.
 
-Chay trong container spark-master (bind mount ./data -> /opt/spark/data,
-./jobs -> /opt/spark/jobs, dung cluster standalone thay vi local mode):
+Chay tren cluster standalone qua script bao spark-submit (tu kem
+--py-files features_common.py):
 
-    docker compose exec spark-master /opt/spark/bin/spark-submit \
-        --master spark://spark-master:7077 \
-        /opt/spark/jobs/ingest_http_access.py
+    ./scripts/submit.ps1 ingest_http_access.py        # Windows PowerShell
+    ./scripts/submit.sh ingest_http_access.py         # Git Bash / Linux / macOS
 
 Chi ingest lai mot vai partition cu the (idempotent - ghi de dung
 partition do, khong dung den cac partition khac):
 
-    docker compose exec spark-master /opt/spark/bin/spark-submit \
-        --master spark://spark-master:7077 \
-        /opt/spark/jobs/ingest_http_access.py --dt 2026-01-10 --hour 00,01
+    ./scripts/submit.ps1 ingest_http_access.py --dt 2026-01-10 --hour 00,01
 """
 from __future__ import annotations
 
@@ -27,38 +24,11 @@ import argparse
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, current_timestamp, input_file_name, lit, to_timestamp
-from pyspark.sql.types import (
-    BooleanType,
-    IntegerType,
-    StringType,
-    StructField,
-    StructType,
-)
+from pyspark.sql.types import StringType, StructField, StructType
 
-# Phai khop voi contracts/http_access_log.v1.schema.json - moi thay doi field
-# o contract can duoc cap nhat o day.
-HTTP_ACCESS_LOG_SCHEMA = StructType(
-    [
-        StructField("ts", StringType(), nullable=False),
-        StructField("trace_id", StringType(), nullable=False),
-        StructField("session_id", StringType(), nullable=False),
-        StructField("user_id", StringType(), nullable=True),
-        StructField("event_type", StringType(), nullable=False),
-        StructField("method", StringType(), nullable=False),
-        StructField("path", StringType(), nullable=False),
-        StructField("article_id", IntegerType(), nullable=True),
-        StructField("status_code", IntegerType(), nullable=False),
-        StructField("latency_ms", IntegerType(), nullable=False),
-        StructField("cache_status", StringType(), nullable=False),
-        StructField("bytes_out", IntegerType(), nullable=False),
-        StructField("ip", StringType(), nullable=False),
-        StructField("user_agent", StringType(), nullable=False),
-        StructField("is_anomaly", BooleanType(), nullable=False),
-        StructField("anomaly_label", StringType(), nullable=True),
-    ]
-)
+from features_common import HTTP_ACCESS_LOG_SCHEMA, TS_PATTERN
+
 CORRUPT_COL = "_corrupt_record"
-TS_PATTERN = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
 
 DEFAULT_BRONZE_PATH = "/opt/spark/data/bronze/http_access"
 DEFAULT_SILVER_PATH = "/opt/spark/data/silver/http_access"
@@ -87,7 +57,11 @@ def main(argv=None) -> None:
     # dang partition so voi bronze (mat so 0 dung dau).
     spark.conf.set("spark.sql.sources.partitionColumnTypeInference.enabled", "false")
 
-    schema_with_corrupt = HTTP_ACCESS_LOG_SCHEMA.add(StructField(CORRUPT_COL, StringType(), nullable=True))
+    # Tao StructType moi thay vi .add(): .add() sua truc tiep schema dung chung
+    # cua features_common (stream_detect.py cung import schema nay).
+    schema_with_corrupt = StructType(
+        HTTP_ACCESS_LOG_SCHEMA.fields + [StructField(CORRUPT_COL, StringType(), nullable=True)]
+    )
 
     # Doc thang thu muc goc de Spark tu phat hien partition dt=/hour= tu ten
     # thu muc (Hive-style partition discovery) - vua co filter pruning, vua

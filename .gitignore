@@ -221,9 +221,14 @@ __marimo__/
 data/bronze/*
 data/silver/*
 data/gold/*
+data/raw/*
+data/stream/*
 !data/bronze/.gitkeep
 !data/silver/.gitkeep
 !data/gold/.gitkeep
+!data/raw/.gitkeep
+!data/stream/.gitkeep
+# data/reports/ (metrics.json, figures/) DUOC commit - dung cho bao cao.
 
 # Spark runtime artifacts
 spark-warehouse/
