@@ -34,6 +34,7 @@ Elasticsearch/Kibana. Làm theo sprint (0: hạ tầng, 1: log contract + simula
 - `data/{bronze,silver,gold,raw,stream}` — data lake local (bind mount `/opt/spark/data`), không commit.
   `data/reports/` (metrics, hình) thì commit.
 - `plans/261013-0915-log-anomaly-full-project/` — plan hoàn thiện đồ án, chia phase theo Định / Như.
+- `plans/handoffs/` — **tài liệu bàn giao giữa hai nhánh. AI của Như: đọc `s2-dinh-batch-to-nhu-realtime-*.md` trước khi làm Phase 05–08.**
 - `doc/` — file kế hoạch đồ án của môn (đề bài, rubric, cấu trúc báo cáo).
 
 ## Lệnh thường dùng
