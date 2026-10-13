@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Phase 3: Dữ liệu quy mô lớn + feature engineering"
-status: completed
+status: todo
 priority: P1
 effort: "1.5h"
 owner: "Định"
@@ -40,13 +40,3 @@ Có dữ liệu simulator có nhãn ở quy mô ~1 triệu dòng và bảng feat
 - Silver sim: số dòng khớp output của generator, trừ đi số dòng reject.
 - `gold/features_sim`: mỗi loại tấn công có ≥ 1 cửa sổ được gán nhãn.
 - `gold/features_nasa`: số cửa sổ > 0, không có giá trị null trong CORE_FEATURES.
-
-## Kết quả (đã chạy)
-
-- Simulator: `--attack-repeat 30` (thay vì 8, để tập test có đủ mẫu mỗi loại tấn công) cho 1.065.283 dòng
-  (brute_force 1.484, sqli 807, scan 1.230, ddos 25.461). Sinh mất khoảng 40s, ingest khoảng 1 phút.
-- Ingest đã được siết: kiểm tra null của field bắt buộc, enum, khoảng giá trị, invariant; lưu nguyên dòng
-  bị loại dạng JSON; quarantine ghi đè tĩnh để không còn dòng lỗi cũ.
-- `gold/features_nasa`: 358.687 cửa sổ, 81.982 host (khoảng 90s).
-- Khác biệt phân phối NASA so với sim: `ratio_static` p50 là 0,6 so với 0; `mean_bytes` p95 là 145KB so với 15KB.
-  Vì vậy model được huấn luyện riêng cho từng nguồn (R9).

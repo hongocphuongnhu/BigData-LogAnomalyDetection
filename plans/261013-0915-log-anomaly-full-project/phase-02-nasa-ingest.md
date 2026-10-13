@@ -1,7 +1,7 @@
 ---
 phase: 2
 title: "Phase 2: Ingest NASA log thật"
-status: completed
+status: todo
 priority: P1
 effort: "1.5h"
 owner: "Định"
@@ -48,15 +48,3 @@ vào silver đã làm sạch, kèm thống kê chất lượng dữ liệu cho b
 - Tổng dòng đọc ≈ 1.891.715; tỉ lệ reject < 0,1%.
 - `dq_nasa.json` và 5 hình tồn tại.
 - Spark UI (8080) có job hoàn thành, chạy trên worker (không phải local mode); chụp màn hình cho báo cáo.
-
-## Kết quả (đã chạy)
-
-- `jobs/ingest_nasa.py` chạy trên cluster khoảng 4–5 phút. Kết quả: 661 file Parquet (mỗi `dt/hour` một file), từ 01/07 đến 28/07/1995 (log gốc dừng ở ngày 28).
-- `data/reports/dq_nasa.json`: 1.891.715 dòng, 1.891.709 vào silver; loại 6 dòng (1 `malformed_line`,
-  5 `malformed_request`); giữ 835 dòng trùng; 19.721 dòng thiếu bytes; 3.732 request HTTP/0.9;
-  974 request bất thường; khoảng 79–82 nghìn host.
-- **Bài học "small files problem"** (nên đưa vào báo cáo): lần chạy đầu không `repartition("dt","hour")`
-  nên 16 task × khoảng 670 partition sinh ra hơn 10.000 file nhỏ, ghi hơn 10 phút chưa xong.
-  Sau khi sửa: 661 file, cả job khoảng 4 phút.
-- EDA: 6 hình `data/reports/figures/nasa_*.png`. Đỉnh 13/07/1995 ≈ 12.000 request/giờ trùng với
-  ngày phóng tàu STS-70, một bất thường có thật trong dữ liệu.

@@ -23,26 +23,12 @@ from __future__ import annotations
 import argparse
 
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import (
-    col,
-    current_timestamp,
-    input_file_name,
-    lit,
-    struct,
-    to_json,
-    to_timestamp,
-)
+from pyspark.sql.functions import col, current_timestamp, input_file_name, lit, to_timestamp
 from pyspark.sql.types import StringType, StructField, StructType
 
 from features_common import HTTP_ACCESS_LOG_SCHEMA, TS_PATTERN
 
 CORRUPT_COL = "_corrupt_record"
-
-# Gia tri hop le theo contracts/http_access_log.v1.schema.json (enum).
-VALID_METHODS = ["GET", "POST", "PUT", "DELETE", "HEAD"]
-VALID_EVENT_TYPES = ["view_article", "list_articles", "search", "login", "logout", "static_asset", "other"]
-VALID_CACHE_STATUSES = ["HIT", "MISS"]
-VALID_ANOMALY_LABELS = ["brute_force", "sqli", "scan", "ddos"]
 
 DEFAULT_BRONZE_PATH = "/opt/spark/data/bronze/http_access"
 DEFAULT_SILVER_PATH = "/opt/spark/data/silver/http_access"
@@ -104,35 +90,14 @@ def main(argv=None) -> None:
 
     parsed_df = raw_df.filter(col(CORRUPT_COL).isNull()).drop(CORRUPT_COL)
 
-    # Schema JSON chi bat duoc sai KIEU. nullable=False cua StructType khong
-    # duoc reader JSON enforce, nen field bat buoc bi thieu (null), gia tri
-    # ngoai enum, so am, va invariant is_anomaly <-> anomaly_label phai kiem
-    # tra tuong minh o day.
-    contract_cols = [f.name for f in HTTP_ACCESS_LOG_SCHEMA.fields]
-    required_cols = [f.name for f in HTTP_ACCESS_LOG_SCHEMA.fields if not f.nullable]
-    required_ok = None
-    for c in required_cols:
-        required_ok = col(c).isNotNull() if required_ok is None else required_ok & col(c).isNotNull()
-    contract_ok = (
-        required_ok
-        & col("method").isin(VALID_METHODS)
-        & col("event_type").isin(VALID_EVENT_TYPES)
-        & col("cache_status").isin(VALID_CACHE_STATUSES)
-        & col("status_code").between(100, 599)
-        & (col("latency_ms") >= 0)
-        & (col("bytes_out") >= 0)
-        & (
-            (col("is_anomaly") & col("anomaly_label").isin(VALID_ANOMALY_LABELS))
-            | (~col("is_anomaly") & col("anomaly_label").isNull())
-        )
+    # Invariant cua contract: is_anomaly == (anomaly_label khac null).
+    invariant_ok = (col("is_anomaly") & col("anomaly_label").isNotNull()) | (
+        ~col("is_anomaly") & col("anomaly_label").isNull()
     )
-    # Bieu thuc co null (thieu field) cho ket qua null chu khong phai False,
-    # phai coi la vi pham chu khong de lot qua ca hai nhanh filter.
-    contract_ok = contract_ok.isNotNull() & contract_ok
-    contract_violation_df = parsed_df.filter(~contract_ok).withColumn(
+    contract_violation_df = parsed_df.filter(~invariant_ok).withColumn(
         "reject_reason", lit("contract_violation")
     )
-    good_df = parsed_df.filter(contract_ok)
+    good_df = parsed_df.filter(invariant_ok)
 
     # Khu trung theo trace_id - ingest lai (rerun/retry) khong duoc tao ban ghi trung lap.
     before_dedup = good_df.count()
@@ -143,27 +108,19 @@ def main(argv=None) -> None:
         "ingested_at", current_timestamp()
     )
 
-    # repartition theo cot partition: moi thu muc dt/hour mot file, tranh
-    # moi task ghi vao moi thu muc (small files problem).
-    good_df.repartition("dt", "hour").write.mode("overwrite").partitionBy("dt", "hour").parquet(
-        args.silver_path
-    )
+    good_df.write.mode("overwrite").partitionBy("dt", "hour").parquet(args.silver_path)
 
     rejected_df = malformed_df.select(
         CORRUPT_COL, "reject_reason", "source_file", "dt", "hour"
     ).unionByName(
-        # Luu NGUYEN dong (dang JSON) de con debug/sua va ingest lai duoc.
         contract_violation_df.select(
-            to_json(struct(*contract_cols)).alias(CORRUPT_COL), "reject_reason", "source_file", "dt", "hour"
+            col("ts").alias(CORRUPT_COL), "reject_reason", "source_file", "dt", "hour"
         )
     )
     malformed_count = malformed_df.count()
     contract_violation_count = contract_violation_df.count()
-    # Luon ghi (ke ca rong) va dung overwrite STATIC: quarantine phan anh dung
-    # lan chay gan nhat, khong con sot dong loi cu cua lan truoc da duoc sua.
-    rejected_df.write.mode("overwrite").option("partitionOverwriteMode", "static").partitionBy(
-        "dt", "hour"
-    ).parquet(args.rejected_path)
+    if malformed_count or contract_violation_count:
+        rejected_df.write.mode("overwrite").partitionBy("dt", "hour").parquet(args.rejected_path)
 
     total_read = before_dedup + malformed_count + contract_violation_count
     duplicate_count = before_dedup - after_dedup
