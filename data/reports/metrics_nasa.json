@@ -1,0 +1,382 @@
+{
+  "source": "nasa",
+  "generated_at": "2026-10-13T10:27:30+00:00",
+  "window": "5 minutes",
+  "min_req_for_scoring": 3,
+  "train_test_cutoff": null,
+  "results": [
+    {
+      "method": "kmeans",
+      "features": "core",
+      "k": 3,
+      "scoring": "cblof",
+      "large_clusters": [
+        0,
+        2
+      ],
+      "silhouette_by_k": {
+        "2": 0.2051,
+        "3": 0.9559,
+        "4": 0.2948,
+        "5": 0.3125,
+        "6": 0.3101,
+        "7": 0.3923,
+        "8": 0.2472,
+        "9": 0.2914,
+        "10": 0.3115
+      },
+      "threshold": 6.2966,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 199002,
+        "1": 1215,
+        "2": 39667
+      }
+    },
+    {
+      "method": "kmeans_own",
+      "features": "core",
+      "k": 3,
+      "scoring": "own",
+      "large_clusters": null,
+      "silhouette_by_k": {
+        "2": 0.2051,
+        "3": 0.9559,
+        "4": 0.2948,
+        "5": 0.3125,
+        "6": 0.3101,
+        "7": 0.3923,
+        "8": 0.2472,
+        "9": 0.2914,
+        "10": 0.3115
+      },
+      "threshold": 6.0584,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 199002,
+        "1": 1215,
+        "2": 39667
+      }
+    },
+    {
+      "method": "bisecting",
+      "features": "core",
+      "k": 4,
+      "scoring": "cblof",
+      "large_clusters": [
+        1,
+        2,
+        3
+      ],
+      "silhouette_by_k": {
+        "2": 0.2093,
+        "3": 0.1584,
+        "4": 0.2208,
+        "5": -0.0042,
+        "6": -0.0021,
+        "7": 0.1208,
+        "8": 0.1774,
+        "9": 0.1103,
+        "10": 0.0534
+      },
+      "threshold": 7.7738,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 6639,
+        "1": 134141,
+        "2": 64077,
+        "3": 35027
+      }
+    }
+  ],
+  "alerts": 2487,
+  "cluster_profile_kmeans_core": [
+    {
+      "cluster": 0,
+      "windows": 199002,
+      "n_req": 7.602,
+      "burst_rate": 0.12,
+      "n_distinct_paths": 7.103,
+      "ratio_4xx": 0.002,
+      "ratio_5xx": 0.0,
+      "ratio_404": 0.002,
+      "ratio_post": 0.0,
+      "ratio_sus_path": 0.0,
+      "ratio_static": 0.563,
+      "mean_bytes": 20466.727,
+      "max_bytes": 68783.257
+    },
+    {
+      "cluster": 1,
+      "windows": 1215,
+      "n_req": 6.793,
+      "burst_rate": 0.097,
+      "n_distinct_paths": 5.507,
+      "ratio_4xx": 0.532,
+      "ratio_5xx": 0.0,
+      "ratio_404": 0.532,
+      "ratio_post": 0.001,
+      "ratio_sus_path": 0.001,
+      "ratio_static": 0.33,
+      "mean_bytes": 9153.108,
+      "max_bytes": 31805.741
+    },
+    {
+      "cluster": 2,
+      "windows": 39667,
+      "n_req": 5.206,
+      "burst_rate": 1.062,
+      "n_distinct_paths": 5.114,
+      "ratio_4xx": 0.0,
+      "ratio_5xx": 0.0,
+      "ratio_404": 0.0,
+      "ratio_post": 0.0,
+      "ratio_sus_path": 0.0,
+      "ratio_static": 0.791,
+      "mean_bytes": 3241.556,
+      "max_bytes": 9146.976
+    }
+  ],
+  "top_alerts": [
+    {
+      "ip": "163.205.1.45",
+      "window_start": "1995-07-03 14:50:00",
+      "n_req": 35.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 4.0,
+      "score": 320.7210228448273,
+      "severity": "high",
+      "reason": "ratio_5xx",
+      "rule_reason": ""
+    },
+    {
+      "ip": "piweba4y.prodigy.com",
+      "window_start": "1995-07-28 01:35:00",
+      "n_req": 4.0,
+      "ratio_4xx": 1.0,
+      "ratio_404": 1.0,
+      "n_distinct_paths": 2.0,
+      "score": 293.4816503784159,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path"
+    },
+    {
+      "ip": "sun1.who.ch",
+      "window_start": "1995-07-23 22:15:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 3.0,
+      "score": 259.3246893513391,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path"
+    },
+    {
+      "ip": "163.205.1.45",
+      "window_start": "1995-07-03 14:55:00",
+      "n_req": 32.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 2.0,
+      "score": 257.7571351305878,
+      "severity": "high",
+      "reason": "ratio_5xx",
+      "rule_reason": ""
+    },
+    {
+      "ip": "192.83.171.94",
+      "window_start": "1995-07-18 01:45:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 2.0,
+      "score": 226.6270735547931,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "dffl6-32.gate.net",
+      "window_start": "1995-07-24 21:05:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 2.0,
+      "score": 186.31783712152426,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "163.205.1.45",
+      "window_start": "1995-07-03 14:40:00",
+      "n_req": 8.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 2.0,
+      "score": 174.68511879258125,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "asimov",
+      "window_start": "1995-07-25 15:40:00",
+      "n_req": 4.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 1.0,
+      "score": 139.78182308172003,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "138.13.123.172",
+      "window_start": "1995-07-06 22:10:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.3333333333333333,
+      "ratio_404": 0.3333333333333333,
+      "n_distinct_paths": 3.0,
+      "score": 130.10072336227165,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path"
+    },
+    {
+      "ip": "198.122.135.40",
+      "window_start": "1995-07-25 21:55:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 3.0,
+      "score": 129.7271830521841,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path"
+    },
+    {
+      "ip": "firnvx.firn.edu",
+      "window_start": "1995-07-22 04:15:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 3.0,
+      "score": 129.68654382012005,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path"
+    },
+    {
+      "ip": "titan02",
+      "window_start": "1995-07-18 20:05:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 2.0,
+      "score": 129.06662903257993,
+      "severity": "high",
+      "reason": "ratio_5xx",
+      "rule_reason": ""
+    },
+    {
+      "ip": "163.205.1.45",
+      "window_start": "1995-07-03 14:45:00",
+      "n_req": 18.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 2.0,
+      "score": 126.4237053953865,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "134.57.9.77",
+      "window_start": "1995-07-24 21:55:00",
+      "n_req": 4.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 4.0,
+      "score": 119.34492542262441,
+      "severity": "high",
+      "reason": "ratio_5xx",
+      "rule_reason": ""
+    },
+    {
+      "ip": "firnvx.firn.edu",
+      "window_start": "1995-07-22 04:35:00",
+      "n_req": 4.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 4.0,
+      "score": 97.27303069944638,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": ""
+    },
+    {
+      "ip": "abcworks.demon.co.uk",
+      "window_start": "1995-07-07 14:20:00",
+      "n_req": 4.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 4.0,
+      "score": 97.2479451862341,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": ""
+    },
+    {
+      "ip": "line159.nwm.mindlink.net",
+      "window_start": "1995-07-12 05:25:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.6666666666666666,
+      "ratio_404": 0.6666666666666666,
+      "n_distinct_paths": 3.0,
+      "score": 95.5273903929199,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "149.25.97.54",
+      "window_start": "1995-07-11 23:35:00",
+      "n_req": 3.0,
+      "ratio_4xx": 0.3333333333333333,
+      "ratio_404": 0.3333333333333333,
+      "n_distinct_paths": 3.0,
+      "score": 93.78110161610479,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "147.150.105.17",
+      "window_start": "1995-07-14 13:45:00",
+      "n_req": 6.0,
+      "ratio_4xx": 0.3333333333333333,
+      "ratio_404": 0.3333333333333333,
+      "n_distinct_paths": 5.0,
+      "score": 93.73960928716222,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    },
+    {
+      "ip": "192.112.239.115",
+      "window_start": "1995-07-27 14:45:00",
+      "n_req": 6.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 4.0,
+      "score": 93.19564234615976,
+      "severity": "high",
+      "reason": "ratio_post",
+      "rule_reason": ""
+    }
+  ]
+}

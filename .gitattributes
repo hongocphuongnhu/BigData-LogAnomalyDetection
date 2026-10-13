@@ -5,3 +5,7 @@ Dockerfile  text eol=lf
 *.py        text eol=lf
 *.yml       text eol=lf
 .env*       text eol=lf
+
+# Model Spark luu kem file .crc (checksum tung byte): neu git doi LF->CRLF khi
+# checkout tren Windows, Spark bao ChecksumException luc PipelineModel.load.
+data/gold/models/** binary

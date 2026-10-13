@@ -238,3 +238,4 @@ derby.log
 # Docker Desktop / Elastic
 *.docker.env
 
+data/logs/

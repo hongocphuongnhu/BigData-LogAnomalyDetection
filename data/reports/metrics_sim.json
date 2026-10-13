@@ -1,0 +1,565 @@
+{
+  "source": "sim",
+  "generated_at": "2026-10-13T10:24:57+00:00",
+  "window": "5 minutes",
+  "min_req_for_scoring": 3,
+  "train_test_cutoff": "2026-01-10 16:48:00",
+  "results": [
+    {
+      "method": "rule",
+      "features": "core",
+      "tp": 209,
+      "fp": 0,
+      "fn": 359,
+      "tn": 70512,
+      "precision": 1.0,
+      "recall": 0.368,
+      "f1": 0.538,
+      "fpr": 0.0,
+      "recall_by_label": {
+        "brute_force": 0.9,
+        "ddos": 0.337,
+        "scan": 1.0,
+        "sqli": 1.0
+      }
+    },
+    {
+      "method": "kmeans",
+      "features": "core",
+      "k": 2,
+      "scoring": "cblof",
+      "large_clusters": [
+        0
+      ],
+      "silhouette_by_k": {
+        "2": 0.3656,
+        "3": 0.2796,
+        "4": 0.3277,
+        "5": 0.2701,
+        "6": 0.3372,
+        "7": 0.2622,
+        "8": 0.345,
+        "9": 0.3056,
+        "10": 0.3546
+      },
+      "threshold": 7.4929,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 121608,
+        "1": 796
+      },
+      "tp": 567,
+      "fp": 221,
+      "fn": 1,
+      "tn": 70291,
+      "precision": 0.7195,
+      "recall": 0.9982,
+      "f1": 0.8363,
+      "fpr": 0.00313,
+      "recall_by_label": {
+        "brute_force": 1.0,
+        "ddos": 1.0,
+        "scan": 1.0,
+        "sqli": 0.9
+      },
+      "pr_auc": 0.9979,
+      "roc_auc": 0.9985,
+      "best_f1_on_test": {
+        "threshold": 12.9892,
+        "precision": 1.0,
+        "recall": 0.9982,
+        "f1": 0.9991
+      }
+    },
+    {
+      "method": "kmeans_own",
+      "features": "core",
+      "k": 2,
+      "scoring": "own",
+      "large_clusters": null,
+      "silhouette_by_k": {
+        "2": 0.3656,
+        "3": 0.2796,
+        "4": 0.3277,
+        "5": 0.2701,
+        "6": 0.3372,
+        "7": 0.2622,
+        "8": 0.345,
+        "9": 0.3056,
+        "10": 0.3546
+      },
+      "threshold": 6.5631,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 121608,
+        "1": 796
+      },
+      "tp": 120,
+      "fp": 424,
+      "fn": 448,
+      "tn": 70088,
+      "precision": 0.2206,
+      "recall": 0.2113,
+      "f1": 0.2158,
+      "fpr": 0.00601,
+      "recall_by_label": {
+        "brute_force": 1.0,
+        "ddos": 0.1722,
+        "scan": 1.0,
+        "sqli": 0.9
+      },
+      "pr_auc": 0.1567,
+      "roc_auc": 0.9505,
+      "best_f1_on_test": {
+        "threshold": 6.2258,
+        "precision": 0.2017,
+        "recall": 0.257,
+        "f1": 0.226
+      }
+    },
+    {
+      "method": "bisecting",
+      "features": "core",
+      "k": 2,
+      "scoring": "cblof",
+      "large_clusters": [
+        0,
+        1
+      ],
+      "silhouette_by_k": {
+        "2": 0.3656,
+        "3": 0.16,
+        "4": 0.1905,
+        "5": 0.0311,
+        "6": 0.0808,
+        "7": 0.193,
+        "8": 0.2119,
+        "9": 0.2327,
+        "10": 0.1985
+      },
+      "threshold": 7.4697,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 50107,
+        "1": 72297
+      },
+      "tp": 567,
+      "fp": 187,
+      "fn": 1,
+      "tn": 70325,
+      "precision": 0.752,
+      "recall": 0.9982,
+      "f1": 0.8578,
+      "fpr": 0.00265,
+      "recall_by_label": {
+        "brute_force": 1.0,
+        "ddos": 1.0,
+        "scan": 1.0,
+        "sqli": 0.9
+      },
+      "pr_auc": 0.9979,
+      "roc_auc": 0.9985,
+      "best_f1_on_test": {
+        "threshold": 12.9471,
+        "precision": 1.0,
+        "recall": 0.9982,
+        "f1": 0.9991
+      }
+    },
+    {
+      "method": "kmeans",
+      "features": "extended",
+      "k": 2,
+      "scoring": "cblof",
+      "large_clusters": [
+        0,
+        1
+      ],
+      "silhouette_by_k": {
+        "2": 0.3247,
+        "3": 0.272,
+        "4": 0.2696,
+        "5": 0.264,
+        "6": 0.2701,
+        "7": 0.2784,
+        "8": 0.1989,
+        "9": 0.2264,
+        "10": 0.1883
+      },
+      "threshold": 7.8717,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 74169,
+        "1": 48235
+      },
+      "tp": 567,
+      "fp": 188,
+      "fn": 1,
+      "tn": 70324,
+      "precision": 0.751,
+      "recall": 0.9982,
+      "f1": 0.8571,
+      "fpr": 0.00267,
+      "recall_by_label": {
+        "brute_force": 1.0,
+        "ddos": 1.0,
+        "scan": 1.0,
+        "sqli": 0.9
+      },
+      "pr_auc": 0.9979,
+      "roc_auc": 0.9985,
+      "best_f1_on_test": {
+        "threshold": 18.4933,
+        "precision": 1.0,
+        "recall": 0.9982,
+        "f1": 0.9991
+      }
+    },
+    {
+      "method": "bisecting",
+      "features": "extended",
+      "k": 2,
+      "scoring": "cblof",
+      "large_clusters": [
+        0,
+        1
+      ],
+      "silhouette_by_k": {
+        "2": 0.2095,
+        "3": 0.1337,
+        "4": 0.1042,
+        "5": 0.0351,
+        "6": 0.0552,
+        "7": 0.1629,
+        "8": 0.181,
+        "9": 0.0943,
+        "10": 0.1085
+      },
+      "threshold": 7.8918,
+      "threshold_pct": 0.99,
+      "cluster_sizes": {
+        "0": 51172,
+        "1": 71232
+      },
+      "tp": 567,
+      "fp": 203,
+      "fn": 1,
+      "tn": 70309,
+      "precision": 0.7364,
+      "recall": 0.9982,
+      "f1": 0.8475,
+      "fpr": 0.00288,
+      "recall_by_label": {
+        "brute_force": 1.0,
+        "ddos": 1.0,
+        "scan": 1.0,
+        "sqli": 0.9
+      },
+      "pr_auc": 0.9979,
+      "roc_auc": 0.9985,
+      "best_f1_on_test": {
+        "threshold": 18.5208,
+        "precision": 1.0,
+        "recall": 0.9982,
+        "f1": 0.9991
+      }
+    }
+  ],
+  "alerts": 2069,
+  "cluster_profile_kmeans_core": [
+    {
+      "cluster": 0,
+      "windows": 173049,
+      "n_req": 5.436,
+      "burst_rate": 0.444,
+      "n_distinct_paths": 5.0,
+      "ratio_4xx": 0.064,
+      "ratio_5xx": 0.02,
+      "ratio_404": 0.064,
+      "ratio_post": 0.07,
+      "ratio_sus_path": 0.0,
+      "ratio_static": 0.1,
+      "mean_bytes": 9490.288,
+      "max_bytes": 16371.876,
+      "anomaly_rate": 0.0
+    },
+    {
+      "cluster": 1,
+      "windows": 1363,
+      "n_req": 21.227,
+      "burst_rate": 2.31,
+      "n_distinct_paths": 19.5,
+      "ratio_4xx": 0.28,
+      "ratio_5xx": 0.237,
+      "ratio_404": 0.019,
+      "ratio_post": 0.025,
+      "ratio_sus_path": 0.032,
+      "ratio_static": 0.0,
+      "mean_bytes": 290.03,
+      "max_bytes": 532.646,
+      "anomaly_rate": 1.0
+    }
+  ],
+  "top_alerts": [
+    {
+      "ip": "220.187.137.186",
+      "window_start": "2026-01-10 23:40:00",
+      "n_req": 39.0,
+      "ratio_4xx": 0.10256410256410256,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 10.0,
+      "score": 70.54997341638636,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "flood,suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "67.202.181.1",
+      "window_start": "2026-01-10 08:05:00",
+      "n_req": 39.0,
+      "ratio_4xx": 0.02564102564102564,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 70.32014874411762,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "flood,suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "28.174.176.90",
+      "window_start": "2026-01-10 03:25:00",
+      "n_req": 39.0,
+      "ratio_4xx": 0.1282051282051282,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 70.28280386168784,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "flood,suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "128.230.92.160",
+      "window_start": "2026-01-10 17:10:00",
+      "n_req": 40.0,
+      "ratio_4xx": 0.1,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 70.17917658804589,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "flood,suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "193.232.194.231",
+      "window_start": "2026-01-10 17:40:00",
+      "n_req": 25.0,
+      "ratio_4xx": 0.04,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 9.0,
+      "score": 70.13586293647376,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "flood,suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "148.109.184.211",
+      "window_start": "2026-01-10 23:45:00",
+      "n_req": 39.0,
+      "ratio_4xx": 0.05128205128205128,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 70.08578477106778,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "flood,suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "136.0.55.47",
+      "window_start": "2026-01-10 03:15:00",
+      "n_req": 22.0,
+      "ratio_4xx": 0.13636363636363635,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 10.0,
+      "score": 70.0270810725517,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "flood,suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "120.96.179.50",
+      "window_start": "2026-01-10 21:55:00",
+      "n_req": 35.0,
+      "ratio_4xx": 0.14285714285714285,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 10.0,
+      "score": 69.86151389276404,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "67.108.191.252",
+      "window_start": "2026-01-10 12:30:00",
+      "n_req": 39.0,
+      "ratio_4xx": 0.05128205128205128,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 69.80068468241822,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "57.54.52.241",
+      "window_start": "2026-01-10 16:15:00",
+      "n_req": 31.0,
+      "ratio_4xx": 0.03225806451612903,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 69.79826589876726,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "10.175.132.29",
+      "window_start": "2026-01-10 02:10:00",
+      "n_req": 22.0,
+      "ratio_4xx": 0.18181818181818182,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 8.0,
+      "score": 69.73220109560224,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "53.74.171.212",
+      "window_start": "2026-01-10 01:30:00",
+      "n_req": 38.0,
+      "ratio_4xx": 0.07894736842105263,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 69.72975607365522,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "56.254.201.45",
+      "window_start": "2026-01-10 03:15:00",
+      "n_req": 40.0,
+      "ratio_4xx": 0.025,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 12.0,
+      "score": 69.69765657155483,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "71.226.224.40",
+      "window_start": "2026-01-10 15:15:00",
+      "n_req": 31.0,
+      "ratio_4xx": 0.06451612903225806,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 11.0,
+      "score": 69.66280310978094,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "101.245.9.47",
+      "window_start": "2026-01-10 13:05:00",
+      "n_req": 31.0,
+      "ratio_4xx": 0.06451612903225806,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 11.0,
+      "score": 69.64826794680273,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "116.11.46.107",
+      "window_start": "2026-01-10 23:25:00",
+      "n_req": 17.0,
+      "ratio_4xx": 0.058823529411764705,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 8.0,
+      "score": 69.64184901188875,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "209.184.114.37",
+      "window_start": "2026-01-10 12:05:00",
+      "n_req": 24.0,
+      "ratio_4xx": 0.125,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 10.0,
+      "score": 69.6249633224051,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "112.179.64.68",
+      "window_start": "2026-01-10 04:50:00",
+      "n_req": 21.0,
+      "ratio_4xx": 0.0,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 9.0,
+      "score": 69.58706347534147,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "72.234.140.14",
+      "window_start": "2026-01-10 04:25:00",
+      "n_req": 27.0,
+      "ratio_4xx": 0.1111111111111111,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 11.0,
+      "score": 69.57837352780732,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    },
+    {
+      "ip": "169.118.79.77",
+      "window_start": "2026-01-10 07:15:00",
+      "n_req": 15.0,
+      "ratio_4xx": 0.06666666666666667,
+      "ratio_404": 0.0,
+      "n_distinct_paths": 8.0,
+      "score": 69.57385730175083,
+      "severity": "high",
+      "reason": "ratio_sus_path",
+      "rule_reason": "suspicious_path",
+      "anomaly_label": "sqli"
+    }
+  ]
+}
