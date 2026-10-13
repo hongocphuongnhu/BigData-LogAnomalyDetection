@@ -57,7 +57,7 @@ Hai nhánh nối với nhau qua **một hợp đồng giao tiếp** (Phase 01) �
 | 01 | [Nền tảng dùng chung & hợp đồng giao tiếp](./phase-01-shared-foundation.md) | Định + Claude | 1h | – | **Done** |
 | 02 | [Ingest NASA log thật](./phase-02-nasa-ingest.md) | Định | 1.5h | 01 | **Done** |
 | 03 | [Dữ liệu quy mô lớn + feature engineering](./phase-03-features-at-scale.md) | Định | 1.5h | 01 | **Done** |
-| 04 | [Mô hình phát hiện bất thường + đánh giá](./phase-04-anomaly-models.md) | Định | 2.5h | 03 | Pending |
+| 04 | [Mô hình phát hiện bất thường + đánh giá](./phase-04-anomaly-models.md) | Định | 2.5h | 03 | **Done** |
 | 05 | [HDFS data lake](./phase-05-hdfs-storage.md) | Như | 1.5h | 01 | Pending |
 | 06 | [Export Elasticsearch](./phase-06-es-export.md) | Như | 1.5h | 01 | Pending |
 | 07 | [Streaming cảnh báo real-time](./phase-07-streaming-alerts.md) | Như | 2.5h | 01 (04 để dùng model thật) | Pending |

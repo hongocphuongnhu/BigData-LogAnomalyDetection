@@ -237,6 +237,19 @@ def model_input_sql(feature_cols: list[str]) -> str:
     return f"SELECT *, {', '.join(exprs)} FROM __THIS__"
 
 
+LARGE_CLUSTER_MIN_FRAC = 0.05
+
+
+def large_clusters_from_sizes(sizes: dict[int, int], min_frac: float = LARGE_CLUSTER_MIN_FRAC) -> list[int]:
+    """Cum "lon" (= hanh vi binh thuong) theo CBLOF: chiem >= min_frac so diem.
+
+    Luon giu it nhat cum lon nhat de khong bao gio rong.
+    """
+    total = sum(sizes.values())
+    large = [c for c, n in sizes.items() if n >= min_frac * total]
+    return sorted(large) if large else [max(sizes, key=sizes.get)]
+
+
 def add_distance_score(
     df: DataFrame,
     centers: list[list[float]],
@@ -244,22 +257,49 @@ def add_distance_score(
     cluster_col: str = "cluster",
     out_col: str = "score",
     feature_names: list[str] | None = None,
+    large_clusters: list[int] | None = None,
 ) -> DataFrame:
-    """Diem bat thuong = khoang cach Euclid tu diem toi tam cum duoc gan.
+    """Diem bat thuong dua tren khoang cach toi tam cum (kieu CBLOF).
+
+    - large_clusters=None: khoang cach toi tam cum duoc gan (KMeans thuan).
+    - large_clusters=[...]: CBLOF (He et al., 2003). Diem thuoc cum LON ->
+      khoang cach toi tam cum cua no; diem thuoc cum NHO -> khoang cach toi tam
+      cum lon GAN NHAT. Ly do: tan cong thuong tu gom thanh cum nho rieng va nam
+      sat tam cum do, nen "khoang cach toi tam cum cua minh" lai rat thap.
 
     Tinh bang bieu thuc SQL tren mang (vector_to_array + zip_with + aggregate)
-    thay vi Python UDF -> chay hoan toan tren JVM, khong ton chi phi
-    serialize sang Python, dung duoc ca trong foreachBatch cua streaming.
+    thay vi Python UDF -> chay hoan toan tren JVM, dung duoc ca trong
+    foreachBatch cua streaming.
 
-    Neu truyen feature_names: them cot top_feature = feature lech khoi tam cum
-    nhieu nhat (giai thich ngan gon "vi sao bat thuong" cho canh bao).
+    Neu truyen feature_names: them cot top_feature = feature lech khoi tam
+    tham chieu nhieu nhat (giai thich ngan gon "vi sao bat thuong").
     """
     from pyspark.ml.functions import vector_to_array
 
+    vec = vector_to_array(F.col(vec_col))
+
+    def sq_diff(center_col):
+        return F.zip_with(vec, center_col, lambda a, b: (a - b) * (a - b))
+
+    def dist(center_col):
+        return F.sqrt(F.aggregate(sq_diff(center_col), F.lit(0.0), lambda acc, x: acc + x))
+
     centers_lit = F.array(*[F.array(*[F.lit(float(x)) for x in c]) for c in centers])
-    center = F.element_at(centers_lit, F.col(cluster_col) + 1)
-    diff_sq = F.zip_with(vector_to_array(F.col(vec_col)), center, lambda a, b: (a - b) * (a - b))
-    out = df.withColumn(out_col, F.sqrt(F.aggregate(diff_sq, F.lit(0.0), lambda acc, x: acc + x)))
+    ref_cluster = F.col(cluster_col)
+    if large_clusters is not None and len(large_clusters) < len(centers):
+        # Cum lon gan nhat: least() tren khoang cach toi tung tam cum lon, roi
+        # tra nguoc ra id cum bang chuoi when().
+        dists = {c: dist(F.element_at(centers_lit, c + 1)) for c in large_clusters}
+        nearest_d = F.least(*dists.values()) if len(dists) > 1 else next(iter(dists.values()))
+        nearest_id = None
+        for c, d in dists.items():
+            nearest_id = F.when(d == nearest_d, F.lit(c)) if nearest_id is None else nearest_id.when(d == nearest_d, F.lit(c))
+        ref_cluster = F.when(F.col(cluster_col).isin(large_clusters), F.col(cluster_col)).otherwise(nearest_id)
+
+    # ref_cluster = tam dung de cham diem (giu lai de giai thich canh bao).
+    out = df.withColumn("ref_cluster", ref_cluster)
+    diff_sq = sq_diff(F.element_at(centers_lit, F.col("ref_cluster") + 1))
+    out = out.withColumn(out_col, F.sqrt(F.aggregate(diff_sq, F.lit(0.0), lambda acc, x: acc + x)))
     if feature_names:
         # array_position cua API Python (Spark 3.5) chi nhan gia tri literal,
         # nen tim vi tri phan tu lon nhat bang bieu thuc SQL.

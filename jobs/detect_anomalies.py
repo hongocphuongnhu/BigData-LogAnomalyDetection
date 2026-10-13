@@ -2,8 +2,10 @@
 
 So sanh 3 phuong phap tren CUNG bang feature cua so (ip, 5 phut):
   - rule     : nguong viet tay (features_common.rule_score) - baseline
-  - kmeans   : KMeans, diem = khoang cach toi tam cum duoc gan
+  - kmeans   : KMeans + diem CBLOF (khoang cach toi tam cum LON gan nhat)
   - bisecting: BisectingKMeans (phan cum chia doi phan cap), cung cach cham diem
+  (them bien the kmeans_own: khoang cach toi tam cum cua chinh no, de chung
+  minh vi sao can CBLOF khi tan cong tu gom thanh cum nho)
 
 Model hoc KHONG giam sat (khong dung nhan). Voi simulator, nhan chi dung de
 danh gia tren tap test (30% thoi gian cuoi). k chon theo silhouette tren
@@ -38,6 +40,7 @@ from features_common import (
     EXTENDED_FEATURES,
     GOLD_ROOT,
     MIN_REQ_FOR_SCORING,
+    large_clusters_from_sizes,
     MODEL_DIR,
     MODEL_META_PATH,
     REPORTS_DIR,
@@ -58,7 +61,7 @@ def parse_args(argv=None) -> argparse.Namespace:
     p.add_argument("--gold-root", default=GOLD_ROOT)
     p.add_argument("--k-min", type=int, default=2)
     p.add_argument("--k-max", type=int, default=10)
-    p.add_argument("--threshold-pct", type=float, default=0.97, help="Phan vi diem tren train lam nguong canh bao.")
+    p.add_argument("--threshold-pct", type=float, default=0.99, help="Phan vi diem tren train lam nguong canh bao.")
     p.add_argument("--train-frac", type=float, default=0.7, help="(sim) ty le thoi gian dau dung de train.")
     p.add_argument("--silhouette-sample", type=int, default=50000)
     p.add_argument("--seed", type=int, default=42)
@@ -76,9 +79,9 @@ def build_pipeline(algo: str, feature_cols: list[str], k: int, seed: int) -> Pip
     )
 
 
-def score(model: PipelineModel, df: DataFrame, feature_cols: list[str]) -> DataFrame:
+def score(model: PipelineModel, df: DataFrame, feature_cols: list[str], large: list[int] | None) -> DataFrame:
     centers = [c.tolist() for c in model.stages[-1].clusterCenters()]
-    out = add_distance_score(model.transform(df), centers, feature_names=feature_cols)
+    out = add_distance_score(model.transform(df), centers, feature_names=feature_cols, large_clusters=large)
     # Cua so qua it request: khong du bang chung -> diem 0 (xem MIN_REQ_FOR_SCORING).
     return out.withColumn(
         "score", F.when(F.col("n_req") >= MIN_REQ_FOR_SCORING, F.col("score")).otherwise(F.lit(0.0))
@@ -215,27 +218,35 @@ def main(argv=None) -> None:
             print(f"[{algo}/{vname}] chon k ...")
             k, sil = choose_k(eligible_train, algo, feature_cols, args)
             model = build_pipeline(algo, feature_cols, k, args.seed).fit(eligible_train)
-
-            train_scored = score(model, eligible_train, feature_cols)
-            threshold = train_scored.approxQuantile("score", [args.threshold_pct], 0.0005)[0]
             sizes = {r["cluster"]: r["count"] for r in model.transform(eligible_train).groupBy("cluster").count().collect()}
-            entry = {
-                "method": algo, "features": vname, "k": k,
-                "silhouette_by_k": {str(kk): round(v, 4) for kk, v in sil.items()},
-                "threshold": round(threshold, 4), "threshold_pct": args.threshold_pct,
-                "cluster_sizes": {str(c): n for c, n in sorted(sizes.items())},
-            }
-            if labeled:
-                test_scored = score(model, test, feature_cols).withColumn("pred", F.col("score") > threshold)
-                entry.update(binary_metrics(test_scored, "pred", "score"))
-                entry["best_f1_on_test"] = best_f1_threshold(test_scored, "score")
-            print(f"  {json.dumps({k2: entry[k2] for k2 in entry if k2 not in ('silhouette_by_k', 'cluster_sizes')}, default=str)}")
-            results.append(entry)
+            large = large_clusters_from_sizes(sizes)
 
-            # Model dua vao streaming + scores/alerts: KMeans tren CORE (ap dung duoc cho moi nguon).
+            # kmeans core: them bien the "own" (khong CBLOF) de so sanh trong bao cao.
+            scorings = [("cblof", large)] + ([("own", None)] if algo == "kmeans" and vname == "core" else [])
+            for scoring, large_arg in scorings:
+                train_scored = score(model, eligible_train, feature_cols, large_arg)
+                threshold = train_scored.approxQuantile("score", [args.threshold_pct], 0.0005)[0]
+                entry = {
+                    "method": algo if scoring == "cblof" else f"{algo}_own", "features": vname, "k": k,
+                    "scoring": scoring, "large_clusters": large_arg,
+                    "silhouette_by_k": {str(kk): round(v, 4) for kk, v in sil.items()},
+                    "threshold": round(threshold, 4), "threshold_pct": args.threshold_pct,
+                    "cluster_sizes": {str(c): n for c, n in sorted(sizes.items())},
+                }
+                if labeled:
+                    test_scored = score(model, test, feature_cols, large_arg).withColumn("pred", F.col("score") > threshold)
+                    entry.update(binary_metrics(test_scored, "pred", "score"))
+                    entry["best_f1_on_test"] = best_f1_threshold(test_scored, "score")
+                print(f"  {json.dumps({k2: entry[k2] for k2 in entry if k2 not in ('silhouette_by_k', 'cluster_sizes')}, default=str)}")
+                results.append(entry)
+
+            # Model dua vao streaming + scores/alerts: KMeans + CBLOF tren CORE (ap dung duoc cho moi nguon).
             if algo == "kmeans" and vname == "core":
-                final_scored = score(model, feats, feature_cols)
-                final_meta = {"model": model, "k": k, "threshold": threshold, "features": feature_cols}
+                train_thr = score(model, eligible_train, feature_cols, large).approxQuantile(
+                    "score", [args.threshold_pct], 0.0005
+                )[0]
+                final_scored = score(model, feats, feature_cols, large)
+                final_meta = {"model": model, "k": k, "threshold": train_thr, "features": feature_cols, "large": large}
 
     # --- scores + alerts (KMeans/CORE) ---
     thr = final_meta["threshold"]
@@ -295,6 +306,8 @@ def main(argv=None) -> None:
             "features": final_meta["features"],
             "window": DEFAULT_WINDOW,
             "k": final_meta["k"],
+            "scoring": "cblof",
+            "large_clusters": final_meta["large"],
             "threshold": final_meta["threshold"],
             "threshold_pct": args.threshold_pct,
             "min_req_for_scoring": MIN_REQ_FOR_SCORING,

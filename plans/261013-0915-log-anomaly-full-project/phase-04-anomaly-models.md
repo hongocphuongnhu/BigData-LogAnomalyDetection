@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Phase 4: Mô hình phát hiện bất thường + đánh giá"
-status: todo
+status: completed
 priority: P1
 effort: "2.5h"
 owner: "Định"
@@ -62,3 +62,36 @@ cho nhánh streaming. Đây là tiêu chí 2.5 điểm.
 - `PipelineModel.load(...)` trong container chạy được (Như sẽ dùng).
 - Có ít nhất 6 hình trong `data/reports/figures/`.
 - Nếu F1 ≈ 1.0 thì ghi rõ lý do trong báo cáo (rủi ro R4), không giấu.
+
+## Kết quả (đã chạy)
+
+**Thay đổi thiết kế so với plan:** cách chấm điểm "khoảng cách tới tâm cụm của chính nó" thất bại
+(F1 0,22). Silhouette chọn k = 2 và **toàn bộ tấn công tự gom thành một cụm nhỏ** (1.363 cửa sổ,
+100% là tấn công), nên các cửa sổ tấn công nằm sát tâm cụm của mình. Chuyển sang **CBLOF**
+(He và cộng sự, 2003): điểm của cửa sổ thuộc cụm nhỏ = khoảng cách tới tâm cụm lớn gần nhất. Ngưỡng
+đổi từ p97 sang **p99** của điểm trên tập train (không dùng nhãn).
+
+Tập test sim (30% thời gian cuối: 71.080 cửa sổ, 568 tấn công), bảng đầy đủ ở `data/reports/model_comparison.md`:
+
+| Phương pháp | P | R | F1 | PR-AUC | Recall DDoS |
+|---|---|---|---|---|---|
+| Rule | 1,000 | 0,368 | 0,538 | – | 0,34 |
+| KMeans, tâm cụm riêng | 0,221 | 0,211 | 0,216 | 0,157 | 0,17 |
+| **KMeans + CBLOF (core)**: model cho streaming | 0,720 | 0,998 | 0,836 | 0,998 | 1,00 |
+| BisectingKMeans + CBLOF (core) | 0,752 | 0,998 | 0,858 | 0,998 | 1,00 |
+| KMeans + CBLOF (extended) | 0,751 | 0,998 | 0,857 | 0,998 | 1,00 |
+
+F1 tối ưu trên test (có dùng nhãn, chỉ để tham khảo) là 0,999, nên dữ liệu giả lập tách được gần như hoàn toàn (R4).
+
+**NASA** (k = 3, 2.487 cảnh báo): cụm 1 (1.215 cửa sổ) có tỉ lệ 404 là 53%, tức nhóm "link hỏng / dò quét".
+Cảnh báo số 1 là `163.205.1.45` (dải IP của KSC), 03/07 14:40–14:55, chuỗi lỗi 5xx + POST; khớp với đỉnh 5xx
+trên hình EDA. Hạn chế: feature gần như hằng số 0 (`ratio_5xx`, `ratio_post`, `ratio_sus_path`) có độ lệch chuẩn
+rất nhỏ, sau StandardScaler thì điểm bị khuếch đại lên hàng trăm.
+
+**Artefact cho Như (S2):** `data/gold/models/kmeans_core` (PipelineModel có sẵn bước log1p) và
+`data/reports/model_meta.json` (`threshold`, `large_clusters`, `centers`). Streaming phải gọi
+`add_distance_score(..., large_clusters=meta["large_clusters"])`.
+
+**Hình** (theo skill dataviz, bảng màu đã qua validator): `model_comparison`, `model_recall_by_attack`,
+`model_silhouette_by_k`, `model_pr_curve`, `model_score_distribution`, `model_pca_clusters`,
+`model_pca_attacks`, `nasa_top_anomalies` + 6 hình EDA NASA đã vẽ lại theo cùng style.
