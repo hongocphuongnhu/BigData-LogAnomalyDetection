@@ -1,7 +1,7 @@
 ---
 phase: 6
 title: "Phase 6: Export Elasticsearch"
-status: todo
+status: in-progress
 priority: P1
 effort: "1.5h"
 owner: "Như"
@@ -50,3 +50,12 @@ Mapping: `event_time`/`window_start` kiểu `date`; `ip` kiểu `keyword` (NASA 
 - `curl "localhost:9200/_cat/indices?v"`: `docs.count` khớp với số dòng Parquet (chạy lại không nhân đôi).
 - Kibana Discover xem được dữ liệu của cả 4 data view.
 - Ghi thời gian bulk 1,9 triệu dòng NASA (số liệu hiệu năng cho báo cáo). Nếu > 15 phút thì chỉ đẩy mẫu 20%.
+
+## Cập nhật 13/10 (theo đối chiếu của Như)
+
+Đã có: script mapping/export; `logs-sim` có 61.643 dòng. Còn thiếu (D3, D4 trong plan):
+1. Trên **máy demo**, chạy `./scripts/run_batch.sh` (Git Bash, khoảng 15 phút) để có `silver/nasa_access`, `gold/scores_*`, `gold/alerts_*`.
+2. Export `logs-nasa` (hiện 0 dòng), `log-features` từ `gold/scores_{sim,nasa}`, `log-alerts` từ `gold/alerts_{sim,nasa}`.
+   Cột batch: `ip, window_start, window_end, <11 CORE feature>, [sim: 5 EXTENDED + is_anomaly, anomaly_label],
+   source, rule_reason, rule_flag, cluster, ref_cluster, score, top_feature, threshold, is_alert, severity, reason, dt`.
+   Mapping: thêm `ref_cluster` (keyword hoặc integer), `top_feature` / `reason` / `severity` (keyword), `is_alert` (boolean).

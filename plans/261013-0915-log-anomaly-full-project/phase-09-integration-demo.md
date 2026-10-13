@@ -50,3 +50,11 @@ Chuẩn bị phương án B: video quay màn hình phần live, phòng khi máy 
 
 - `run_all` chạy hết không cần can thiệp tay (trừ thao tác tạo rule Kibana nếu không import được).
 - Demo vừa ≤ 8 phút.
+
+## Cập nhật 13/10 — chỉ demo
+
+- Chốt **máy demo** (đề xuất máy Như, đã có ES, Kibana, dashboard, streaming). Trên máy đó phải xong D1–D5 của plan.
+- Phần batch (Định) lúc demo **không chạy lại**: `run_batch.sh` chạy sẵn từ trước, khi demo chỉ mở kết quả
+  (`data/reports/model_comparison.md`, hình trong `data/reports/figures/`, dashboard NASA).
+- Phần live (Như): `stream_detect` chấm điểm CBLOF, rồi `stream_simulate --attack ddos`; cảnh báo hiện trên Kibana.
+- Không làm Word/PPT ở phase này (Phase 10 đã huỷ).

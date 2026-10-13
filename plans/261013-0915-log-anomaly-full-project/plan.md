@@ -1,132 +1,117 @@
 ---
-title: "Hoàn thiện đồ án Log Anomaly Detection trong 1 ngày (Định + Như)"
-description: "Đưa repo từ Sprint 2 lên sản phẩm nộp được: dữ liệu NASA thật, feature Spark, KMeans/BisectingKMeans so với rule baseline, HDFS + Elasticsearch, Structured Streaming cảnh báo real-time, dashboard Kibana, báo cáo và slide."
-status: pending
+title: "Hoàn thiện đồ án Log Anomaly Detection — chỉ demo bằng code (Định + Như)"
+description: "Pipeline chạy được để demo: NASA thật + simulator có nhãn, feature Spark, KMeans + chấm điểm CBLOF, HDFS + Elasticsearch, Structured Streaming cảnh báo real-time, dashboard Kibana."
+status: in-progress
 priority: P1
-effort: 24h (≈12h mỗi người, chạy song song)
-branch: main
-tags: [feature, infra, spark, elasticsearch, hdfs, streaming, ml]
+effort: "còn khoảng 3–4h (phần tích hợp + tập demo)"
+branch: dinh/batch (Định), nhánh riêng của Như; gộp vào main ở mốc S3
+tags: [feature, infra, spark, elasticsearch, hdfs, streaming, ml, demo]
 blockedBy: []
 blocks: []
 created: 2026-10-13
+updated: 2026-10-13
 ---
 
-# Hoàn thiện đồ án Log Anomaly Detection (deadline: 1 ngày)
+# Hoàn thiện đồ án Log Anomaly Detection — chỉ demo bằng code
 
-## Overview
+## Phạm vi (cập nhật 13/10)
 
-Hiện repo đã có hạ tầng (Spark + ES/Kibana), Log Contract v1, simulator có nhãn và job
-ingest bronze → silver. Còn thiếu mọi thứ chiếm điểm lớn trong rubric: mô hình (2.5đ),
-trực quan/ứng dụng (2.5đ), lưu trữ HDFS/ES (một phần 2.0đ), báo cáo/slide.
+- **Chỉ làm demo bằng code.** **Không** làm Word/PPT trong plan này (Như đã có Word, slide, PDF,
+  video dự phòng). Phase 10 đã huỷ.
+- **Chốt mô hình: KMeans + chấm điểm CBLOF.** Model, ngưỡng và hợp đồng giữa hai nhánh **đóng băng**
+  từ đây. Muốn đổi gì thì phải báo trước ảnh hưởng lên nhánh kia và được cả hai đồng ý.
 
-Plan chia làm 2 nhánh code song song, mỗi người một nhánh và một phần demo:
+## Mô hình đã chốt: KMeans + CBLOF
 
-- **Định — Batch + Mô hình**: dữ liệu NASA thật, feature engineering, rule vs KMeans vs
-  BisectingKMeans, đánh giá F1/PR-AUC, biểu đồ kết quả.
-- **Như — Lưu trữ + Real-time**: HDFS, export Elasticsearch, Spark Structured Streaming
-  sinh cảnh báo, dashboard Kibana + alert rule.
+1. **KMeans** (Spark MLlib) gom các cửa sổ (IP × 5 phút) thành nhóm hành vi. Trên simulator, k = 2:
+   cụm lớn khoảng 99% là traffic bình thường, cụm nhỏ khoảng 1% gần như toàn tấn công.
+2. **CBLOF** chấm điểm bất thường: cửa sổ thuộc cụm **lớn** thì đo khoảng cách tới tâm cụm của nó; cửa sổ
+   thuộc cụm **nhỏ** thì đo khoảng cách tới **tâm cụm lớn gần nhất**. Điểm vượt ngưỡng thì cảnh báo.
+3. **Ngưỡng** = phân vị 99 của điểm trên tập train (không dùng nhãn). Cửa sổ có < 3 request thì điểm = 0.
 
-Hai nhánh nối với nhau qua **một hợp đồng giao tiếp** (Phase 01) để không chặn nhau.
+Vì sao không dùng "khoảng cách tới tâm cụm được gán": tấn công tự gom thành một cụm riêng nên nằm sát
+tâm cụm của chính nó và bị chấm điểm thấp. Trên tập test, cách đó chỉ đạt F1 0,22 và bắt 17% DDoS;
+CBLOF đạt F1 0,84 và bắt 100% DDoS. Cách cũ chỉ giữ trong bảng so sánh để giải thích lựa chọn.
+Đề bài yêu cầu "phân cụm **hoặc** phát hiện bất thường"; KMeans + CBLOF đáp ứng cả hai vế.
 
-## Đối chiếu đề bài / rubric
+**Artefact (đã có trên `origin/dinh/batch`):** `data/gold/models/kmeans_core` (PipelineModel) +
+`data/reports/model_meta.json` (`threshold`, `large_clusters`, `centers`, `min_req_for_scoring`).
+**Batch và streaming phải chấm điểm giống hệt nhau**, bằng đoạn code ở mục 6 của
+[handoff S2](../handoffs/s2-dinh-batch-to-nhu-realtime-20261013-1736.md).
 
-| Yêu cầu (docx) | Phase đáp ứng | Rubric |
-|---|---|---|
-| Log từ máy chủ / ứng dụng / mạng | 02 (NASA thật), 03 (simulator có nhãn) | CLO1, CLO2 |
-| Lưu trữ HDFS **hoặc** ES — làm cả hai | 05 (HDFS = data lake), 06 (ES = serving) | CLO2 (2.0) |
-| Spark xử lý + trích xuất đặc trưng | 02, 03, 07 | CLO2, CLO3 |
-| Phân cụm / phát hiện bất thường + đánh giá, so sánh, hạn chế | 04 | CLO3 (2.5) |
-| Dashboard thống kê lỗi + cảnh báo bất thường | 07, 08 | CLO3 (2.5) |
-| Làm sạch: thiếu, trùng, ngoại lệ, không nhất quán | 02, 03 | CLO2 |
-| Mã nguồn, hướng dẫn chạy, báo cáo đúng cấu trúc, slide, phân công | 09, 10 | CLO4, CLO5 |
-
-## Phân công tổng quát
+## Phân công
 
 | | **Định** (Batch + Mô hình) | **Như** (Lưu trữ + Real-time) |
 |---|---|---|
-| Phase code | 01 (cùng Claude), 02, 03, 04 | 05, 06, 07, 08 |
-| Phase chung | 09, 10 | 09, 10 |
-| Ước lượng | ≈ 11h | ≈ 12h |
-| Demo | Batch: NASA, bảng so sánh mô hình, IP bất thường thật | Live: bắn DDoS/scan → cảnh báo hiện trên Kibana |
-| Báo cáo | Dữ liệu & tiền xử lý, lý thuyết thuật toán, kết quả & so sánh, hạn chế | Giới thiệu, kiến trúc & lý do chọn công nghệ, lý thuyết HDFS/ES/Streaming, dashboard, hướng dẫn chạy |
+| Phase | 01, 02, 03, 04 (**xong**) | 05, 06, 07, 08 (gần xong, còn đồng bộ với CBLOF) |
+| Phần demo | NASA thật, bảng so sánh mô hình, top IP bất thường NASA | Live: bắn DDoS/scan → cảnh báo hiện trên Kibana |
+| Chung | 09: tích hợp trên máy demo + tập demo | 09 |
 
 ## Phases
 
-| # | Phase | Owner | Effort | Phụ thuộc | Status |
-|---|-------|-------|--------|-----------|--------|
-| 01 | [Nền tảng dùng chung & hợp đồng giao tiếp](./phase-01-shared-foundation.md) | Định + Claude | 1h | – | **Done** |
-| 02 | [Ingest NASA log thật](./phase-02-nasa-ingest.md) | Định | 1.5h | 01 | **Done** |
-| 03 | [Dữ liệu quy mô lớn + feature engineering](./phase-03-features-at-scale.md) | Định | 1.5h | 01 | **Done** |
-| 04 | [Mô hình phát hiện bất thường + đánh giá](./phase-04-anomaly-models.md) | Định | 2.5h | 03 | **Done** |
-| 05 | [HDFS data lake](./phase-05-hdfs-storage.md) | Như | 1.5h | 01 | Pending |
-| 06 | [Export Elasticsearch](./phase-06-es-export.md) | Như | 1.5h | 01 | Pending |
-| 07 | [Streaming cảnh báo real-time](./phase-07-streaming-alerts.md) | Như | 2.5h | 01 (04 để dùng model thật) | Pending |
-| 08 | [Dashboard Kibana + alert rule](./phase-08-kibana-dashboard.md) | Như | 2h | 06, 07 | Pending |
-| 09 | [Tích hợp, README, kịch bản demo](./phase-09-integration-demo.md) | Cả hai | 1.5h | 02–08 | Pending |
-| 10 | [Báo cáo Word + slide](./phase-10-report-slides.md) | Cả hai | ≈3h/người, rải suốt ngày | – | Pending |
+| # | Phase | Owner | Phụ thuộc | Status |
+|---|-------|-------|-----------|--------|
+| 01 | [Nền tảng dùng chung & hợp đồng giao tiếp](./phase-01-shared-foundation.md) | Định + Claude | – | **Done** |
+| 02 | [Ingest NASA log thật](./phase-02-nasa-ingest.md) | Định | 01 | **Done** |
+| 03 | [Dữ liệu quy mô lớn + feature engineering](./phase-03-features-at-scale.md) | Định | 01 | **Done** |
+| 04 | [Mô hình KMeans + CBLOF + đánh giá](./phase-04-anomaly-models.md) | Định | 03 | **Done** |
+| 05 | [HDFS data lake](./phase-05-hdfs-storage.md) | Như | 01 | Gần xong: còn NASA + gold |
+| 06 | [Export Elasticsearch](./phase-06-es-export.md) | Như | 01, 04 | Gần xong: còn NASA, features, alerts batch |
+| 07 | [Streaming cảnh báo real-time](./phase-07-streaming-alerts.md) | Như | 04 | **Cần sửa: chấm điểm CBLOF** |
+| 08 | [Dashboard Kibana + alert rule](./phase-08-kibana-dashboard.md) | Như | 06, 07 | Gần xong: còn đồng bộ schema batch |
+| 09 | [Tích hợp + kịch bản demo](./phase-09-integration-demo.md) | Cả hai | 05–08 | Pending |
+| 10 | [~~Báo cáo Word + slide~~](./phase-10-report-slides.md) | – | – | **Cancelled** (ngoài phạm vi) |
 
-## Lịch trong ngày (H0 = lúc bắt đầu)
+## Còn lại để demo chạy được (theo bảng đối chiếu của Như)
 
-```
-        H0   H1        H2.5      H4        H5.5     H6.5      H8.5     H10        H13
-Định    |-01-|---02----|---03----|------04---------|--10 kết quả--|---09---|---10 + tập demo--|
-Như     |-10-|---05----|---06----|--------07--------|----08--------|---09---|---10 + tập demo--|
-                                 ^S1               ^S2                      ^S3
-```
+| # | Việc | Vì sao cần cho demo | Phase |
+|---|---|---|---|
+| D1 | Như merge `origin/dinh/batch`, kiểm tra `PipelineModel.load` chạy được trên máy Như | Model mới chỉ được thử trên máy Định | 07 |
+| D2 | `stream_detect.py` chấm điểm **CBLOF** (truyền `large_clusters`, `min_req`, `threshold`, `severity` từ `model_meta.json`) | Nếu không, bắn DDoS sẽ gần như không có cảnh báo | 07 |
+| D3 | Chạy `./scripts/run_batch.sh` trên **máy demo** để có silver/gold NASA + sim | `data/silver`, `data/gold` không có trong git | 06 |
+| D4 | Export vào ES: `logs-nasa` (đang 0 dòng), `log-features`, `log-alerts` (batch) | Dashboard thiếu phần NASA và cảnh báo batch | 06 |
+| D5 | Đồng bộ dashboard Kibana với cột batch mới (`score`, `ref_cluster`, `top_feature`, `severity`, `reason`, `is_alert`) | Như ghi là "cần đồng bộ schema"; panel so sánh nhãn chưa xong | 08 |
+| D6 | (Tuỳ chọn) đưa NASA + gold lên HDFS | Minh chứng lưu trữ HDFS; local đã đủ để demo | 05 |
+| D7 | Chốt **máy demo**, chạy thử từ đầu tới cuối và tập 2 lần, bấm giờ | Tránh lỗi lúc thuyết trình | 09 |
 
-- **S1 (~H4)**: Định bàn giao silver/gold của simulator + `features_common.py` ổn định.
-  Như export features lên ES và chạy streaming bằng rule fallback.
-- **S2 (~H6)**: Định lưu model + `model_meta.json`. Như chuyển streaming sang model thật.
-- **S3 (~H10)**: freeze code. Chỉ sửa bug, còn lại dồn vào báo cáo, slide, tập demo.
-
-**Danh sách cắt nếu trễ ở H8** (theo thứ tự): BisectingKMeans → biến thể extended
-features → NASA trên ES (chỉ đẩy 10% mẫu) → HDFS cho streaming (để local).
-Không cắt: rule vs KMeans + đánh giá, ES, streaming alert, dashboard.
+**Máy demo (đề xuất):** máy Như, vì đã có sẵn ES, Kibana, dashboard và streaming. Như làm D1–D5 trên máy mình.
 
 ## Quy tắc làm việc chung
 
-- **Sở hữu file tách biệt** (bảng dưới). Làm thẳng trên `main`, `git pull --rebase`
-  trước khi push, commit nhỏ, mỗi người commit bằng tài khoản của mình (để chứng minh
-  phân công cho tiêu chí CLO5).
-- File dùng chung (`docker-compose.yml`, `jobs/features_common.py`, `.env.example`,
-  `README.md`) chỉ sửa sau khi báo người kia.
-- Mọi job nhận đường dẫn qua tham số `--*-path` (mặc định là local `/opt/spark/data/...`)
-  để Như chạy lại trên `hdfs://namenode:9000/lake/...` mà không sửa code của Định.
+- Mỗi người làm trên **nhánh riêng** (`dinh/batch`, nhánh của Như). **Không push `main`** khi cả hai
+  chưa thống nhất (mốc S3).
+- **Hỏi trước mỗi lần `git push`.**
+- File dùng chung (`docker-compose.yml`, `jobs/features_common.py`, `.env.example`, `README.md`,
+  `CLAUDE.md`) chỉ sửa sau khi báo người kia.
+- Mọi job nhận đường dẫn qua tham số `--*-path` (mặc định local `/opt/spark/data/...`; HDFS
+  `hdfs://namenode:9000/lake/...`).
 
 | File / thư mục | Owner |
 |---|---|
-| `docker-compose.yml`, `.env.example`, `docker/spark/Dockerfile`, `scripts/submit.*`, `jobs/features_common.py` | Phase 01 (Định + Claude), sau đó dùng chung |
-| `jobs/ingest_nasa.py`, `jobs/ingest_http_access.py`, `jobs/build_features.py`, `jobs/detect_anomalies.py`, `analysis/`, `scripts/download_nasa.*` | Định |
+| `docker-compose.yml`, `.env.example`, `docker/spark/Dockerfile`, `scripts/submit.*`, `jobs/features_common.py` | Dùng chung |
+| `jobs/ingest_nasa.py`, `jobs/ingest_http_access.py`, `jobs/build_features.py`, `jobs/detect_anomalies.py`, `analysis/`, `scripts/run_batch.sh`, `scripts/download_nasa.*` | Định |
 | `scripts/hdfs_*`, `scripts/es_setup.*`, `jobs/export_to_es.py`, `jobs/stream_detect.py`, `generator/stream_simulate.py`, `kibana/`, `scripts/kibana_import.*` | Như |
-| `README.md`, `doc/demo-script.md`, `doc/` báo cáo + slide | Chung (theo mục) |
 
-## Red-team: rủi ro chính và cách xử lý
+## Rủi ro còn mở
 
-| # | Rủi ro | Xác suất | Cách xử lý |
-|---|---|---|---|
-| R1 | Image `apache/spark` thiếu `numpy` → `pyspark.ml` lỗi khi import | **Đã xảy ra, đã xử lý** | `docker/spark/Dockerfile` cài numpy/pandas/pyarrow |
-| R2 | WSL2 mặc định chỉ cấp ~50% RAM (≈7.6GB) cho 7 container | Cao | Worker 2–3g, ES heap 1g; tắt HDFS khi không dùng; nếu cần thì tăng `memory=` trong `%UserProfile%\.wslconfig` |
-| R3 | `--packages` connector ES 8.19.x không resolve được (pom lỗi trên Maven) | **Đã xảy ra, đã xử lý** | Jar connector được tải sẵn vào image Spark lúc build |
-| R4 | Dữ liệu tấn công tổng hợp quá dễ tách → F1 ≈ 1.0, giảng viên nghi ngờ | Cao | Báo cáo trung thực; so core vs extended features; thêm biến thể khó (brute force chậm) nếu còn giờ; nói rõ trong phần hạn chế |
-| R5 | Streaming có watermark và window → cảnh báo trễ, demo bị chờ lâu | Trung bình | Sliding window 5 phút, slide 1 phút, trigger 10s, simulator dùng thời gian hiện tại; tập trước để biết độ trễ thực tế |
-| R6 | Cột `host` của NASA là hostname, không phải IP | Chắc chắn | Map ES field `ip` kiểu `keyword` (không dùng kiểu `ip`) |
-| R7 | Hai nhánh lệch giao diện (tên cột, đường dẫn model) | Trung bình | Hợp đồng cố định ở Phase 01; đổi thì phải báo người kia |
-| R8 | Kibana alerting không bật được nếu thiếu encryption key | Chắc chắn nếu quên | Đặt `XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY` ngay ở Phase 01 |
-| R9 | Model huấn luyện trên dữ liệu simulator áp lên NASA bị lệch phân phối | Cao | Huấn luyện riêng cho từng nguồn; chỉ đánh giá định lượng trên simulator, NASA đánh giá định tính (top IP bất thường) |
+| # | Rủi ro | Cách xử lý |
+|---|---|---|
+| R2 | RAM Docker khoảng 7,4GB cho 6 container | Tắt project Docker khác trên máy demo; worker 2g, ES heap 1g |
+| R4 | Dữ liệu tấn công giả lập dễ tách (F1 tối ưu 0,999) | Nói rõ khi bị hỏi; NASA thật là phần đánh giá định tính |
+| R5 | Streaming trễ do window/watermark | Window 5 phút, slide 1 phút, trigger 10s; đo độ trễ khi tập |
+| R7 | Hai nhánh lệch hợp đồng (**đã xảy ra**: streaming vẫn chấm theo tâm cụm được gán) | Hợp đồng đóng băng; streaming dùng đúng đoạn chấm điểm trong handoff (D2) |
+| R10 | Checkout trên Windows làm hỏng checksum `.crc` của model | Đã có `.gitattributes` (`data/gold/models/** binary`); nếu vẫn lỗi thì `./scripts/run_batch.sh models` |
 
-## Success Criteria
+Các rủi ro đã xử lý: R1 (thiếu numpy), R3 (connector ES), R6 (NASA host là `keyword`), R8 (key Kibana), R9 (train riêng từng nguồn).
 
-- [ ] `docker compose up -d` dựng đủ Spark, HDFS, ES, Kibana trên máy sạch theo README.
-- [ ] NASA Jul95 (~1,89 triệu dòng) đã parse; có thống kê số dòng lỗi, trùng, thiếu bytes.
-- [ ] Bảng so sánh rule / KMeans / BisectingKMeans có precision, recall, F1, PR-AUC và recall theo từng loại tấn công.
-- [ ] Data lake chạy được trên HDFS; ES có 4 index `logs-sim`, `logs-nasa`, `log-features`, `log-alerts`.
-- [ ] Demo live: bắn DDoS → cảnh báo hiện trên dashboard Kibana trong ≤ 60s, alert rule kích hoạt.
-- [ ] Dashboard export ra `kibana/dashboards.ndjson`, import lại được.
-- [ ] Báo cáo Word đúng cấu trúc trong docx, slide, bảng phân công; nộp lên Classroom.
+## Success Criteria (demo)
 
-## Ghi chú về NoSQL
-
-Đề bài không yêu cầu NoSQL. `cache_status` chỉ là field giả lập (cache của reverse proxy)
-và được dùng làm feature. Elasticsearch đóng vai trò kho lưu trữ document cho phần serving.
+- [x] Stack Spark + HDFS + ES + Kibana dựng được bằng `docker compose up -d --build`.
+- [x] NASA Jul95 đã parse và làm sạch (1.891.709 dòng); có thống kê chất lượng dữ liệu.
+- [x] Bảng so sánh Rule / KMeans (tâm cụm riêng) / KMeans + CBLOF / BisectingKMeans + CBLOF.
+- [ ] ES có `logs-sim`, `logs-nasa`, `log-features`, `log-alerts` với dữ liệu batch mới (D3–D4).
+- [ ] Streaming chấm điểm CBLOF; bắn DDoS → cảnh báo trên Kibana trong ≤ 60s, alert rule kích hoạt (D1–D2).
+- [ ] Dashboard khớp cột batch mới; import lại được từ `kibana/dashboards.ndjson` (D5).
+- [ ] Chạy demo từ đầu tới cuối trên máy demo, tập 2 lần (D7).
 
 <!-- slug: log-anomaly-full-project -->
