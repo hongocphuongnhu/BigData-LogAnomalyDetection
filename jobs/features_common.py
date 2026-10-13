@@ -202,22 +202,68 @@ def rule_score(df: DataFrame) -> DataFrame:
     )
 
 
+# ---------------------------------------------------------------------------
+# Dau vao model (dung chung batch + streaming)
+# ---------------------------------------------------------------------------
+
+# Feature dang dem / bytes / latency co phan bo duoi rat dai (vai IP gui hang
+# nghin request) -> log1p truoc khi chuan hoa, neu khong KMeans chi "nhin"
+# thay vai diem cuc tri. Cac ratio nam san trong [0, 1] nen giu nguyen.
+LOG_FEATURES = {
+    "n_req", "burst_rate", "n_distinct_paths", "mean_bytes", "max_bytes", "mean_latency", "p95_latency",
+}
+
+# Cua so qua it request thi ratio vo nghia (1 request 404 -> ratio_404 = 1.0)
+# va lam nhieu top diem bat thuong -> khong cham diem, coi la binh thuong.
+MIN_REQ_FOR_SCORING = 3
+
+
+def model_input_columns(feature_cols: list[str]) -> list[str]:
+    """Ten cot dua vao VectorAssembler sau buoc bien doi cua model_input_sql."""
+    return [f"m_{c}" for c in feature_cols]
+
+
+def model_input_sql(feature_cols: list[str]) -> str:
+    """Cau lenh cho SQLTransformer - stage DAU cua PipelineModel.
+
+    Dat bien doi vao chinh pipeline (thay vi code rieng o tung job) de
+    stream_detect.py chi can PipelineModel.load(...).transform(...) la ap
+    dung dung tien xu ly nhu luc train.
+    """
+    exprs = [
+        f"log1p({c}) AS m_{c}" if c in LOG_FEATURES else f"CAST({c} AS DOUBLE) AS m_{c}"
+        for c in feature_cols
+    ]
+    return f"SELECT *, {', '.join(exprs)} FROM __THIS__"
+
+
 def add_distance_score(
     df: DataFrame,
     centers: list[list[float]],
     vec_col: str = "scaled",
     cluster_col: str = "cluster",
     out_col: str = "score",
+    feature_names: list[str] | None = None,
 ) -> DataFrame:
     """Diem bat thuong = khoang cach Euclid tu diem toi tam cum duoc gan.
 
     Tinh bang bieu thuc SQL tren mang (vector_to_array + zip_with + aggregate)
     thay vi Python UDF -> chay hoan toan tren JVM, khong ton chi phi
     serialize sang Python, dung duoc ca trong foreachBatch cua streaming.
+
+    Neu truyen feature_names: them cot top_feature = feature lech khoi tam cum
+    nhieu nhat (giai thich ngan gon "vi sao bat thuong" cho canh bao).
     """
     from pyspark.ml.functions import vector_to_array
 
     centers_lit = F.array(*[F.array(*[F.lit(float(x)) for x in c]) for c in centers])
     center = F.element_at(centers_lit, F.col(cluster_col) + 1)
-    sq = F.zip_with(vector_to_array(F.col(vec_col)), center, lambda a, b: (a - b) * (a - b))
-    return df.withColumn(out_col, F.sqrt(F.aggregate(sq, F.lit(0.0), lambda acc, x: acc + x)))
+    diff_sq = F.zip_with(vector_to_array(F.col(vec_col)), center, lambda a, b: (a - b) * (a - b))
+    out = df.withColumn(out_col, F.sqrt(F.aggregate(diff_sq, F.lit(0.0), lambda acc, x: acc + x)))
+    if feature_names:
+        names_lit = F.array(*[F.lit(n) for n in feature_names])
+        out = out.withColumn(
+            "top_feature",
+            F.element_at(names_lit, F.array_position(diff_sq, F.array_max(diff_sq)).cast("int")),
+        )
+    return out
