@@ -1,0 +1,8 @@
+{
+  "duration_seconds": 180,
+  "normal_records": 352,
+  "false_positive_alerts": 0,
+  "detector": "rule_fallback",
+  "manifest_run_id": "a82b8226bf3e",
+  "evidence_log": "data/raw/setup/stream-normal.log"
+}

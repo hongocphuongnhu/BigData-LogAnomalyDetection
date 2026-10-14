@@ -1,0 +1,59 @@
+{
+  "attack": "scan",
+  "run_id": "qa-scan-726a7f78",
+  "detector": "rule_fallback",
+  "latency_seconds": 12.295,
+  "alert_documents_before_restart": 5,
+  "alert_documents_after_restart": 5,
+  "history_before": 1,
+  "history_after": 2,
+  "rule_execution_status": {
+    "status": "ok",
+    "last_execution_date": "2026-10-13T10:26:07.342Z",
+    "last_duration": 253
+  },
+  "rule_last_run": {
+    "outcome": "succeeded",
+    "outcome_order": 0,
+    "warning": null,
+    "outcome_msg": null,
+    "alerts_count": {
+      "new": 0,
+      "ignored": 0,
+      "recovered": 0,
+      "active": 0
+    }
+  },
+  "manifest": {
+    "run_id": "40a7ecb0f4a2",
+    "started_at": "2026-10-13T10:23:42.596242+00:00",
+    "attack": "scan",
+    "first_attack_at": "2026-10-13T10:24:02.596Z",
+    "attack_ips": [
+      "8.63.199.9"
+    ],
+    "normal_records": 159,
+    "attack_records": 30,
+    "planned_duration_seconds": 75.0,
+    "published_records": 189,
+    "files": [
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000000.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000001.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000002.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000003.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000004.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000005.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000006.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000007.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000008.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000009.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000010.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000011.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000012.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000013.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-scan-726a7f78/incoming/part-40a7ecb0f4a2-000014.jsonl"
+    ],
+    "ended_at": "2026-10-13T10:24:57.633787+00:00"
+  },
+  "verified_at": "2026-10-13T10:26:19.664895+00:00"
+}

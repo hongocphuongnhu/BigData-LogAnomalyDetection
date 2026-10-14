@@ -1,0 +1,53 @@
+{
+  "verified_at": "2026-10-13T09:59:37.808923+00:00",
+  "spark_master": "spark://spark-master:7077",
+  "local_silver_path": "/opt/spark/data/silver/http_access",
+  "hdfs_silver_path": "hdfs://namenode:9000/lake/silver/http_access",
+  "local_rows": 61643,
+  "hdfs_rows": 61643,
+  "compared_columns": [
+    "ts",
+    "trace_id",
+    "session_id",
+    "user_id",
+    "event_type",
+    "method",
+    "path",
+    "article_id",
+    "status_code",
+    "latency_ms",
+    "cache_status",
+    "bytes_out",
+    "ip",
+    "user_agent",
+    "is_anomaly",
+    "anomaly_label",
+    "event_time",
+    "dt",
+    "hour"
+  ],
+  "local_only_rows": 0,
+  "hdfs_only_rows": 0,
+  "null_event_time_rows": 0,
+  "invalid_hour_partition_rows": 0,
+  "hdfs_verification_gold_path": "hdfs://namenode:9000/lake/gold/_verification/features_sim",
+  "feature_windows": 13309,
+  "note": "So sanh bo qua source_file va ingested_at vi khac lan ingest. Gold la output kiem chung, chua phai model san pham.",
+  "hdfs_healthy": true,
+  "under_replicated_blocks": 0,
+  "replication": 1,
+  "storage": {
+    "/lake/bronze/http_access": {
+      "logical_bytes": 31989953,
+      "replicated_bytes": 31989953
+    },
+    "/lake/silver/http_access": {
+      "logical_bytes": 5192880,
+      "replicated_bytes": 5192880
+    },
+    "/lake/gold/_verification/features_sim": {
+      "logical_bytes": 480371,
+      "replicated_bytes": 480371
+    }
+  }
+}

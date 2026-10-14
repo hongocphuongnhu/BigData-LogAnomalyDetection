@@ -1,0 +1,3 @@
+﻿31989953  31989953  /lake/bronze/http_access
+5192880   5192880   /lake/silver/http_access
+480371    480371    /lake/gold/_verification/features_sim

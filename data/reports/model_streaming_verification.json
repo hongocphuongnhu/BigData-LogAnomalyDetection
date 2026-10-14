@@ -1,0 +1,7 @@
+{
+  "model_streaming_branch": "passed",
+  "feature_windows": 279,
+  "isolated_indices": true,
+  "fixture_only": true,
+  "note": "Chi kiem chung load/transform/ES cua streaming. Model chinh thuc va chat luong du doan van doi Dinh."
+}
