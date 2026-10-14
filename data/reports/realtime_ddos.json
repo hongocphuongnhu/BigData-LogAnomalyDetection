@@ -1,0 +1,79 @@
+{
+  "attack": "ddos",
+  "run_id": "qa-ddos-ab39abec",
+  "detector": "rule_fallback",
+  "latency_seconds": 18.33,
+  "alert_documents_before_restart": 105,
+  "alert_documents_after_restart": 105,
+  "history_before": 0,
+  "history_after": 1,
+  "rule_execution_status": {
+    "status": "ok",
+    "last_execution_date": "2026-10-13T10:21:37.306Z",
+    "last_duration": 121
+  },
+  "rule_last_run": {
+    "outcome": "succeeded",
+    "outcome_order": 0,
+    "warning": null,
+    "outcome_msg": null,
+    "alerts_count": {
+      "new": 0,
+      "ignored": 0,
+      "recovered": 0,
+      "active": 0
+    }
+  },
+  "manifest": {
+    "run_id": "dda2a7fb4824",
+    "started_at": "2026-10-13T10:19:16.517861+00:00",
+    "attack": "ddos",
+    "first_attack_at": "2026-10-13T10:19:36.517Z",
+    "attack_ips": [
+      "137.135.30.104",
+      "138.176.36.69",
+      "146.208.228.14",
+      "150.250.99.105",
+      "150.34.58.208",
+      "156.74.23.48",
+      "163.71.248.237",
+      "172.115.93.94",
+      "212.228.6.192",
+      "213.5.159.89",
+      "216.57.194.111",
+      "219.208.179.36",
+      "32.199.17.149",
+      "36.59.203.122",
+      "42.101.93.34",
+      "44.9.6.162",
+      "62.9.55.35",
+      "63.90.65.134",
+      "71.228.41.142",
+      "96.145.30.208",
+      "98.216.101.34"
+    ],
+    "normal_records": 159,
+    "attack_records": 893,
+    "planned_duration_seconds": 75.0,
+    "published_records": 1052,
+    "files": [
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000000.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000001.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000002.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000003.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000004.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000005.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000006.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000007.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000008.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000009.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000010.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000011.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000012.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000013.jsonl",
+      "C:/BigData-LogAnomalyDetection/data/stream/qa-ddos-ab39abec/incoming/part-dda2a7fb4824-000014.jsonl"
+    ],
+    "ended_at": "2026-10-13T10:20:31.598524+00:00"
+  },
+  "verified_at": "2026-10-13T10:21:54.321046+00:00"
+}

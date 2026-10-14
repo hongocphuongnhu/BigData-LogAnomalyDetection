@@ -1,0 +1,10 @@
+{
+  "nasa_fixture_rows": 3,
+  "nasa_documents_after_two_exports": 3,
+  "hostname_keyword_accepted": true,
+  "true_duplicate_preserved": true,
+  "pipeline_model_reload": true,
+  "finite_distance_scores": true,
+  "vector_columns_removed": true,
+  "note": "Model nay chi la fixture kiem thu hop dong; khong thay the model Phase 04 cua Dinh."
+}

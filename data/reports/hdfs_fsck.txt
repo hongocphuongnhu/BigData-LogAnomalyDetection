@@ -1,0 +1,210 @@
+﻿Connecting to namenode via http://namenode:9870/fsck?ugi=root&files=1&blocks=1&path=%2Flake
+FSCK started by root (auth:SIMPLE) from /172.18.0.4 for path /lake at Tue Oct 13 10:00:13 UTC 2026
+/lake <dir>
+/lake/_smoke <dir>
+/lake/_smoke/features <dir>
+/lake/_smoke/features/_SUCCESS 0 bytes, replicated: replication=1, 0 block(s):  OK
+
+/lake/_smoke/features/part-00000-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 40804 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741834_1010 len=40804 Live_repl=1
+
+/lake/_smoke/features/part-00001-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 41419 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741835_1011 len=41419 Live_repl=1
+
+/lake/_smoke/features/part-00002-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 38193 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741836_1012 len=38193 Live_repl=1
+
+/lake/_smoke/features/part-00003-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 39637 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741837_1013 len=39637 Live_repl=1
+
+/lake/_smoke/features/part-00004-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 41882 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741838_1014 len=41882 Live_repl=1
+
+/lake/_smoke/features/part-00005-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 37539 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741839_1015 len=37539 Live_repl=1
+
+/lake/_smoke/features/part-00006-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 39934 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741840_1016 len=39934 Live_repl=1
+
+/lake/_smoke/features/part-00007-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 40378 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741841_1017 len=40378 Live_repl=1
+
+/lake/_smoke/features/part-00008-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 41178 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741842_1018 len=41178 Live_repl=1
+
+/lake/_smoke/features/part-00009-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 42374 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741843_1019 len=42374 Live_repl=1
+
+/lake/_smoke/features/part-00010-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 39752 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741844_1020 len=39752 Live_repl=1
+
+/lake/_smoke/features/part-00011-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 40110 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741845_1021 len=40110 Live_repl=1
+
+/lake/_smoke/features/part-00012-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 39084 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741846_1022 len=39084 Live_repl=1
+
+/lake/_smoke/features/part-00013-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 39137 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741847_1023 len=39137 Live_repl=1
+
+/lake/_smoke/features/part-00014-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 39055 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741848_1024 len=39055 Live_repl=1
+
+/lake/_smoke/features/part-00015-944b975f-f462-49c5-9b9e-bf2f01dc179a-c000.snappy.parquet 40821 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741849_1025 len=40821 Live_repl=1
+
+/lake/bronze <dir>
+/lake/bronze/http_access <dir>
+/lake/bronze/http_access/dt=2026-01-10 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=00 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=00/part-20260110T000000-f80c8aca.jsonl 4417452 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741868_1044 len=4417452 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=01 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=01/part-20260110T010000-41b3e98e.jsonl 4295821 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741869_1045 len=4295821 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=02 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=02/part-20260110T020000-82df5843.jsonl 3946461 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741870_1046 len=3946461 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=03 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=03/part-20260110T030000-e1f94d81.jsonl 3834199 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741871_1047 len=3834199 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=04 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=04/part-20260110T040000-693cc5ea.jsonl 3699186 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741872_1048 len=3699186 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=05 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=05/part-20260110T050000-7393db58.jsonl 4312418 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741873_1049 len=4312418 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=06 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=06/part-20260110T060000-9a566b4e.jsonl 3855312 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741874_1050 len=3855312 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=07 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=07/part-20260110T070000-ead5d83e.jsonl 3621606 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741875_1051 len=3621606 Live_repl=1
+
+/lake/bronze/http_access/dt=2026-01-10/hour=08 <dir>
+/lake/bronze/http_access/dt=2026-01-10/hour=08/part-20260110T080000-299f5da3.jsonl 7498 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741876_1052 len=7498 Live_repl=1
+
+/lake/gold <dir>
+/lake/gold/_verification <dir>
+/lake/gold/_verification/features_sim <dir>
+/lake/gold/_verification/features_sim/_SUCCESS 0 bytes, replicated: replication=1, 0 block(s):  OK
+
+/lake/gold/_verification/features_sim/part-00000-4dbbb4bc-a905-4906-a3b9-e2b5e621d02f-c000.snappy.parquet 213263 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741897_1073 len=213263 Live_repl=1
+
+/lake/gold/_verification/features_sim/part-00001-4dbbb4bc-a905-4906-a3b9-e2b5e621d02f-c000.snappy.parquet 267108 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741898_1074 len=267108 Live_repl=1
+
+/lake/raw <dir>
+/lake/raw/nasa <dir>
+/lake/silver <dir>
+/lake/silver/http_access <dir>
+/lake/silver/http_access/dt=2026-01-10 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=00 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=00/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 318691 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741880_1056 len=318691 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=00/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 401696 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741879_1055 len=401696 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=01 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=01/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 316079 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741881_1057 len=316079 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=01/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 385729 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741882_1058 len=385729 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=02 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=02/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 282671 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741883_1059 len=282671 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=02/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 351185 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741884_1060 len=351185 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=03 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=03/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 275338 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741885_1061 len=275338 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=03/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 340066 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741886_1062 len=340066 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=04 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=04/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 267272 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741888_1064 len=267272 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=04/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 330291 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741887_1063 len=330291 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=05 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=05/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 321510 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741891_1067 len=321510 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=05/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 382751 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741889_1065 len=382751 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=06 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=06/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 282580 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741893_1069 len=282580 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=06/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 335751 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741890_1066 len=335751 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=07 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=07/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 265492 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741895_1071 len=265492 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=07/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 320641 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741892_1068 len=320641 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=08 <dir>
+/lake/silver/http_access/dt=2026-01-10/hour=08/part-00000-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 7620 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741896_1072 len=7620 Live_repl=1
+
+/lake/silver/http_access/dt=2026-01-10/hour=08/part-00001-94a86849-0d0a-4f09-af84-4df142885022.c000.snappy.parquet 7517 bytes, replicated: replication=1, 1 block(s):  OK
+0. BP-1324262101-172.18.0.4-1791885137668:blk_1073741894_1070 len=7517 Live_repl=1
+
+
+Status: HEALTHY
+ Number of data-nodes:	1
+ Number of racks:		1
+ Total dirs:			32
+ Total symlinks:		0
+
+Replicated Blocks:
+ Total size:	38304501 B
+ Total files:	47
+ Total blocks (validated):	45 (avg. block size 851211 B)
+ Minimally replicated blocks:	45 (100.0 %)
+ Over-replicated blocks:	0 (0.0 %)
+ Under-replicated blocks:	0 (0.0 %)
+ Mis-replicated blocks:		0 (0.0 %)
+ Default replication factor:	1
+ Average block replication:	1.0
+ Missing blocks:		0
+ Corrupt blocks:		0
+ Missing replicas:		0 (0.0 %)
+
+Erasure Coded Block Groups:
+ Total size:	0 B
+ Total files:	0
+ Total block groups (validated):	0
+ Minimally erasure-coded block groups:	0
+ Over-erasure-coded block groups:	0
+ Under-erasure-coded block groups:	0
+ Unsatisfactory placement block groups:	0
+ Average block group size:	0.0
+ Missing block groups:		0
+ Corrupt block groups:		0
+ Missing internal blocks:	0
+FSCK ended at Tue Oct 13 10:00:13 UTC 2026 in 6 milliseconds
+
+
+The filesystem under path '/lake' is HEALTHY

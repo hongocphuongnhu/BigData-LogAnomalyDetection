@@ -1,0 +1,10 @@
+{
+  "logs-sim:sim": {
+    "index": "logs-sim",
+    "source": "sim",
+    "input_path": "hdfs://namenode:9000/lake/silver/http_access",
+    "input_rows": 61643,
+    "source_documents": 61643,
+    "seconds": 12.186
+  }
+}
