@@ -15,7 +15,9 @@ import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs
 
+from .alerts import fetch_alerts
 from .probes import collect_infra
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -85,9 +87,20 @@ class ConsoleHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if not self._host_ok():
             return self._error(HTTPStatus.FORBIDDEN, "Host không hợp lệ")
-        path = self.path.split("?", 1)[0]
+        path, _, query = self.path.partition("?")
         if path == "/api/infra":
             return self._json(collect_infra())
+        if path == "/api/alerts":
+            params = parse_qs(query)
+            try:
+                limit = int(params.get("limit", ["50"])[0])
+            except ValueError:
+                return self._error(HTTPStatus.BAD_REQUEST, "limit phải là số")
+            label = params.get("label", [None])[0] or None
+            result = fetch_alerts(params.get("source", ["stream"])[0], limit, label)
+            if result.get("error") in ("Nguồn không hợp lệ", "Nhãn không hợp lệ"):
+                return self._json(result, HTTPStatus.BAD_REQUEST)
+            return self._json(result)
         if path in STATIC_FILES:
             name, content_type = STATIC_FILES[path]
             return self._send(HTTPStatus.OK, (STATIC_DIR / name).read_bytes(), content_type)

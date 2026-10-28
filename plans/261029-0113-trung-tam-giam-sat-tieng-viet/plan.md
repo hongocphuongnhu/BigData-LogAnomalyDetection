@@ -60,7 +60,7 @@ Server làm proxy cho mọi API nên trình duyệt không vướng CORS hay `X-
 | # | Phase | Ưu tiên | Effort | Phụ thuộc | Trạng thái |
 |---|---|---|---|---|---|
 | 01 | [Khung server + thẻ Hạ tầng](phase-01-server-va-the-ha-tang.md) | P1 | 2h | — | done |
-| 02 | [Cảnh báo trực tiếp + từ điển tiếng Việt](phase-02-canh-bao-truc-tiep.md) | P1 | 1.5h | 01 | todo |
+| 02 | [Cảnh báo trực tiếp + từ điển tiếng Việt](phase-02-canh-bao-truc-tiep.md) | P1 | 1.5h | 01 | done |
 | 03 | [Mô phỏng tấn công live](phase-03-mo-phong-live.md) | P1 | 2h | 01, 02 | todo |
 | 04 | [Kiểm tra tự động Đạt / Không đạt](phase-04-kiem-tra-tu-dong.md) | P1 | 1.5h | 01, 03 | todo |
 | 05 | [Nhúng dashboard Kibana](phase-05-nhung-kibana.md) | P2 | 0.5h | 01 | todo |

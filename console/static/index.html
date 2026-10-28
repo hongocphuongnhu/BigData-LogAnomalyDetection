@@ -87,15 +87,46 @@
       <p class="soon">Sẽ có ở bước sau.</p>
     </section>
 
-    <section id="canh-bao" class="section section-soon" aria-labelledby="canh-bao-title">
+    <section id="canh-bao" class="section" aria-labelledby="canh-bao-title">
       <header class="section-head">
         <span class="section-no">3</span>
         <div>
-          <h2 id="canh-bao-title">Cảnh báo trực tiếp</h2>
-          <p>Mỗi cảnh báo được giải thích bằng một câu: IP nào, lệch bình thường ở điểm nào, mức độ ra sao.</p>
+          <h2 id="canh-bao-title">Cảnh báo</h2>
+          <p>Mỗi cảnh báo là một địa chỉ IP trong một khung 5 phút có hành vi lệch xa người đọc bình thường.
+            Model chỉ biết <em>lệch ở điểm nào</em>, không tự biết đó là kiểu tấn công gì.</p>
         </div>
       </header>
-      <p class="soon">Sẽ có ở bước sau.</p>
+      <div class="tabs" role="tablist" aria-label="Nguồn cảnh báo">
+        <button type="button" role="tab" data-source="stream" aria-selected="true">Thời gian thực <span class="count"></span></button>
+        <button type="button" role="tab" data-source="sim" aria-selected="false">Lô mô phỏng <span class="count"></span></button>
+        <button type="button" role="tab" data-source="nasa" aria-selected="false">Log NASA thật <span class="count"></span></button>
+      </div>
+      <p class="tab-note" id="alerts-note"></p>
+      <div class="chips" id="alerts-labels" aria-label="Lọc theo nhãn mô phỏng" hidden></div>
+      <ol class="alerts" id="alerts-list" aria-live="polite">
+        <li class="alerts-empty">Đang tải cảnh báo…</li>
+      </ol>
+      <details class="glossary">
+        <summary>Thuật ngữ trên trang này</summary>
+        <dl>
+          <dt>Cửa sổ 5 phút</dt>
+          <dd>Spark gom mọi request của một IP trong 5 phút thành một dòng, rồi tính 11 con số mô tả hành vi:
+            số request, tỷ lệ lỗi, số đường dẫn khác nhau…</dd>
+          <dt>Cụm (KMeans)</dt>
+          <dd>KMeans tự chia các cửa sổ thành nhóm hành vi giống nhau mà không cần ai dán nhãn trước.
+            Nhóm lớn là người đọc bình thường.</dd>
+          <dt>Điểm bất thường (CBLOF)</dt>
+          <dd>Khoảng cách từ cửa sổ tới tâm nhóm bình thường gần nhất. Càng xa, điểm càng cao.</dd>
+          <dt>Ngưỡng</dt>
+          <dd>Mức điểm mà chỉ 1% cửa sổ lúc huấn luyện vượt qua (phân vị 99). Vượt ngưỡng thì cảnh báo.
+            Gấp 1,5 lần ngưỡng là mức Trung bình, gấp 2 lần là mức Cao.</dd>
+          <dt>Lý do chính</dt>
+          <dd>Con số lệch khỏi tâm nhóm bình thường nhiều nhất, giúp giải thích vì sao cửa sổ bị chú ý.</dd>
+          <dt>Nhãn mô phỏng</dt>
+          <dd>Bộ sinh log biết chính xác dòng nào là tấn công. Nhãn này chỉ dùng để đối chiếu,
+            model không được nhìn thấy khi chấm điểm.</dd>
+        </dl>
+      </details>
     </section>
 
     <section id="kiem-tra" class="section section-soon" aria-labelledby="kiem-tra-title">
