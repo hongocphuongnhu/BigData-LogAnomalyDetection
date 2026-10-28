@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Trung tâm giám sát — Báo điện tử</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-row">
+      <div>
+        <p class="kicker">Đồ án Big Data · Phát hiện bất thường trong nhật ký truy cập</p>
+        <h1>Trung tâm giám sát</h1>
+        <p class="standfirst">Một trang báo điện tử đang bị tấn công. Hệ thống đọc nhật ký truy cập bằng Spark,
+          lưu trên HDFS và Elasticsearch, dùng KMeans để nhận ra hành vi lạ và phát cảnh báo.</p>
+      </div>
+      <div class="masthead-tools">
+        <p class="updated" id="updated" aria-live="polite">Đang kiểm tra hệ thống…</p>
+        <button type="button" class="btn-ghost" id="theme-toggle" aria-label="Đổi giao diện sáng tối">Giao diện: tự động</button>
+      </div>
+    </div>
+    <nav class="sections" aria-label="Các mục">
+      <a href="#ha-tang"><span>1</span>Hạ tầng</a>
+      <a href="#mo-phong"><span>2</span>Mô phỏng tấn công</a>
+      <a href="#canh-bao"><span>3</span>Cảnh báo</a>
+      <a href="#kiem-tra"><span>4</span>Kiểm tra tự động</a>
+      <a href="#dashboard"><span>5</span>Dashboard</a>
+    </nav>
+  </header>
+
+  <div class="banner" id="server-banner" role="alert" hidden>
+    Mất kết nối tới server trung tâm. Kiểm tra cửa sổ đang chạy <code>python -m console.server</code>.
+  </div>
+
+  <main>
+    <section id="ha-tang" class="section" aria-labelledby="ha-tang-title">
+      <header class="section-head">
+        <span class="section-no">1</span>
+        <div>
+          <h2 id="ha-tang-title">Hạ tầng đang chạy thật</h2>
+          <p>Năm dịch vụ trong Docker. Số liệu đọc trực tiếp từ API của từng dịch vụ, tự làm mới mỗi 5 giây.</p>
+        </div>
+      </header>
+      <div class="cards" id="infra-cards">
+        <article class="card" data-service="spark">
+          <header><h3>Cụm Spark</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Bộ máy tính toán phân tán: làm sạch log, tính đặc trưng, chạy KMeans.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="spark_task">
+          <header><h3>Tác vụ Spark</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Các job đang chạy trên cụm, ví dụ bộ phát hiện bất thường thời gian thực.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="hdfs">
+          <header><h3>Kho dữ liệu HDFS</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Hồ dữ liệu phân tán, chia tầng thô → sạch → đặc trưng.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="es">
+          <header><h3>Elasticsearch</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Kho tìm kiếm phục vụ dashboard: log đã làm sạch, điểm bất thường, cảnh báo.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="kibana">
+          <header><h3>Kibana</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Dashboard thống kê lỗi và luật cảnh báo tự động khi có cửa sổ bất thường.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+      </div>
+    </section>
+
+    <section id="mo-phong" class="section section-soon" aria-labelledby="mo-phong-title">
+      <header class="section-head">
+        <span class="section-no">2</span>
+        <div>
+          <h2 id="mo-phong-title">Mô phỏng tấn công</h2>
+          <p>Bật bộ phát hiện, chọn một kịch bản tấn công vào trang báo rồi bấm Chạy.</p>
+        </div>
+      </header>
+      <p class="soon">Sẽ có ở bước sau.</p>
+    </section>
+
+    <section id="canh-bao" class="section section-soon" aria-labelledby="canh-bao-title">
+      <header class="section-head">
+        <span class="section-no">3</span>
+        <div>
+          <h2 id="canh-bao-title">Cảnh báo trực tiếp</h2>
+          <p>Mỗi cảnh báo được giải thích bằng một câu: IP nào, lệch bình thường ở điểm nào, mức độ ra sao.</p>
+        </div>
+      </header>
+      <p class="soon">Sẽ có ở bước sau.</p>
+    </section>
+
+    <section id="kiem-tra" class="section section-soon" aria-labelledby="kiem-tra-title">
+      <header class="section-head">
+        <span class="section-no">4</span>
+        <div>
+          <h2 id="kiem-tra-title">Kiểm tra tự động</h2>
+          <p>Chạy bài kiểm tra đầu-cuối: tấn công → phát hiện → cảnh báo, rồi báo Đạt hoặc Không đạt.</p>
+        </div>
+      </header>
+      <p class="soon">Sẽ có ở bước sau.</p>
+    </section>
+
+    <section id="dashboard" class="section section-soon" aria-labelledby="dashboard-title">
+      <header class="section-head">
+        <span class="section-no">5</span>
+        <div>
+          <h2 id="dashboard-title">Dashboard Kibana</h2>
+          <p>Biểu đồ thống kê lỗi và cảnh báo, nhúng thẳng vào trang.</p>
+        </div>
+      </header>
+      <p class="soon">Sẽ có ở bước sau.</p>
+    </section>
+  </main>
+
+  <noscript><p class="banner">Trang cần JavaScript để đọc số liệu trực tiếp.</p></noscript>
+  <script src="/app.js"></script>
+</body>
+</html>
