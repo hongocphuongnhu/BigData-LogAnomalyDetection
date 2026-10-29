@@ -1,7 +1,7 @@
 ---
 phase: 7
 title: "Phase 07: Tích hợp, README, CLAUDE.md"
-status: todo
+status: done
 priority: P2
 effort: "1h"
 dependencies: [1, 2, 3, 4, 5]
@@ -31,3 +31,11 @@ Chạy trọn một vòng demo từ trang và ghi lại cách dùng, để cả 
 - Một người chưa đọc code làm theo README chạy được demo trong ≤ 10 phút (stack đã có dữ liệu).
 - `git diff main --stat` chỉ gồm `console/`, `README.md`, `CLAUDE.md`, `doc/demo-script.md`, `plans/`,
   `scripts/kibana_setup.py` và `kibana/dashboards.ndjson` (Phase 06).
+
+## Kết quả (29/10)
+
+- README: mục "Trung tâm giám sát" (lệnh, 5 vùng, thứ tự bấm, xử lý sự cố R1–R3).
+- CLAUDE.md: sửa dòng sprint cũ, thêm `console/`, ngoại lệ chữ có dấu, bẫy cores.max / driver mồ côi / tên rule.
+- `doc/demo-script.md`: đoạn "Phương án: demo bằng Trung tâm giám sát" (chuẩn bị, 7 bước bấm/nói/thời gian).
+- `data/stream/console/` bị ignore bởi `data/stream/*` (đã kiểm `git check-ignore`).
+- Chưa làm: tập demo 2 lần có bấm giờ cùng Như (việc của người).

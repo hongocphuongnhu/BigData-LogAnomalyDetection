@@ -3,7 +3,8 @@
 Đồ án Big Data: phát hiện bất thường trong HTTP access log. Pipeline medallion
 bronze → silver → gold chạy trên cụm Spark standalone, kết quả gold đẩy sang
 Elasticsearch/Kibana. Làm theo sprint (0: hạ tầng, 1: log contract + simulator,
-2: ingest bronze → silver, 3+: feature/anomaly scoring ở gold — chưa làm).
+2: ingest bronze → silver, 3+: feature, KMeans/CBLOF, serving ES/Kibana, streaming — đã xong;
+nhánh `feat/console`: trang demo tiếng Việt `console/`).
 
 ## Đề bài (tiêu chí chấm)
 
@@ -34,6 +35,9 @@ Elasticsearch/Kibana. Làm theo sprint (0: hạ tầng, 1: log contract + simula
 - `data/{bronze,silver,gold,raw,stream}` — data lake local (bind mount `/opt/spark/data`), không commit.
   `data/reports/` (metrics, hình) thì commit.
 - `plans/261013-0915-log-anomaly-full-project/` — plan hoàn thiện đồ án, chia phase theo Định / Như.
+- `console/` — Trung tâm giám sát: server stdlib `python -m console.server` (127.0.0.1:8765) + `static/`.
+  Chỉ đọc output của Như (ES, Kibana) và gọi `generator.stream_simulate`, `scripts/verify_realtime.py`
+  như lệnh, không import. `runner.py` giữ khóa "một việc một lúc" (live hoặc kiểm tra).
 - `plans/handoffs/` — **tài liệu bàn giao giữa hai nhánh. AI của Như: đọc `s2-dinh-batch-to-nhu-realtime-*.md` trước khi làm Phase 05–08.**
 - `doc/` — file kế hoạch đồ án của môn (đề bài, rubric, cấu trúc báo cáo).
 
@@ -68,6 +72,11 @@ Chưa có test suite hay linter; `smoke_test.py` là bài kiểm tra tích hợp
   artifact chưa publish), nên jar được tải sẵn vào image.
 - Không gọi `F.col(...)` ở cấp module: SparkContext chưa tồn tại lúc import, sẽ lỗi `AssertionError`.
 - Streaming không hỗ trợ `countDistinct`. Dùng `approx_count_distinct` trong mọi hàm feature dùng chung.
+- Worker chỉ có 4 lõi, không đặt `spark.cores.max` thì app đầu tiên chiếm hết, app sau treo WAITING.
+  Stream của console submit với `spark.cores.max=2`; `verify_realtime.py` cần cả 4 lõi.
+- Kill client `docker compose exec` trên host **không** kill driver trong container. Dọn bằng
+  `docker compose exec -T spark-master pkill -f <đường dẫn checkpoint>`.
+- `verify_realtime.py` tìm rule Kibana theo tên `Nhu - New anomaly detected`: **không đổi tên rule**.
 
 ## Quy ước bắt buộc
 
@@ -91,6 +100,7 @@ Chưa có test suite hay linter; `smoke_test.py` là bài kiểm tra tích hợp
 ## Phong cách code
 
 - Comment, docstring, thông báo CLI viết **tiếng Việt không dấu**; tên biến/hàm tiếng Anh.
+  Ngoại lệ: chữ hiển thị trên giao diện `console/static/` và tiêu đề Kibana viết **có dấu**.
 - Comment giải thích *tại sao* (lý do thiết kế, bẫy của Spark), không diễn giải lại code.
 - Python 3 với `from __future__ import annotations`, type hint kiểu `list[dict]`.
 - Generator chỉ dùng thư viện chuẩn; job chỉ dùng PySpark có sẵn trong image.

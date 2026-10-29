@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,6 +20,7 @@ from urllib.parse import parse_qs
 
 from .alerts import fetch_alerts
 from .probes import collect_infra
+from .runner import SCENARIOS, runner
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 # Whitelist co dinh: khong ghep duong dan tu URL -> khong co path traversal.
@@ -101,6 +103,10 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             if result.get("error") in ("Nguồn không hợp lệ", "Nhãn không hợp lệ"):
                 return self._json(result, HTTPStatus.BAD_REQUEST)
             return self._json(result)
+        if path == "/api/live/status":
+            return self._json(runner.status())
+        if path == "/api/check/status":
+            return self._json(runner.check_status())
         if path in STATIC_FILES:
             name, content_type = STATIC_FILES[path]
             return self._send(HTTPStatus.OK, (STATIC_DIR / name).read_bytes(), content_type)
@@ -115,7 +121,22 @@ class ConsoleHandler(BaseHTTPRequestHandler):
         path = self.path.split("?", 1)[0]
         if path == "/api/ping":
             return self._json({"ok": True})
+        if path in ("/api/live/scenario", "/api/check"):
+            # Chi nhan khoa trong whitelist, khong bao gio ghep chuoi tu body vao lenh.
+            attack = body.get("attack") if isinstance(body, dict) else None
+            if attack not in SCENARIOS:
+                return self._error(HTTPStatus.BAD_REQUEST, "Kịch bản không hợp lệ")
+            action = runner.scenario_start if path == "/api/live/scenario" else runner.check_start
+            return self._action(*action(attack))
+        actions = {"/api/live/start": runner.live_start, "/api/live/stop": runner.live_stop,
+                   "/api/check/cancel": runner.check_cancel}
+        if path in actions:
+            return self._action(*actions[path]())
         self._error(HTTPStatus.NOT_FOUND, "Không tìm thấy")
+
+    def _action(self, ok: bool, message: str) -> None:
+        self._json({"ok": ok, "message": message} if ok else {"ok": False, "error": message},
+                   HTTPStatus.OK if ok else HTTPStatus.CONFLICT)
 
     def do_OPTIONS(self) -> None:
         # Khong tra Access-Control-Allow-*: preflight tu origin khac luon that bai.
@@ -134,12 +155,15 @@ def main(argv=None) -> None:
     ConsoleHandler.allowed_hosts = frozenset({f"127.0.0.1:{args.port}", f"localhost:{args.port}"})
     server = ThreadingHTTPServer(("127.0.0.1", args.port), ConsoleHandler)
     server.daemon_threads = True
+    # Don driver mo coi o nen: docker exec mat vai giay, khong chan luc mo trang.
+    threading.Thread(target=runner.cleanup_orphans, daemon=True).start()
     print(f"Trung tam giam sat: http://127.0.0.1:{args.port}  (Ctrl+C de dung)", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
-        pass
+        print("Dang dung, don bo phat hien trong Spark...", flush=True)
     finally:
+        runner.shutdown()
         server.server_close()
 
 

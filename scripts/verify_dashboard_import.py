@@ -29,7 +29,7 @@ def main() -> None:
         assert references == 18
         # Kibana co the doi ID khi import saved object sang space khac.
         lenses = request("GET", prefix + "/api/saved_objects/_find?type=lens&per_page=100", kibana=True)["saved_objects"]
-        lens = next(item for item in lenses if item["attributes"]["title"] == "Ground truth vs prediction (simulator)")
+        lens = next(item for item in lenses if item["attributes"]["title"] == "Nhãn mô phỏng so với dự đoán")
         columns = lens["attributes"]["state"]["datasourceStates"]["formBased"]["layers"]["layer"]["columns"]
         assert columns["breakdown"]["sourceField"] == "is_alert"
     finally:

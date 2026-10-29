@@ -1,7 +1,7 @@
 ---
 phase: 4
 title: "Phase 04: Kiểm tra tự động Đạt / Không đạt"
-status: todo
+status: done
 priority: P1
 effort: "1.5h"
 dependencies: [1, 3]
@@ -59,3 +59,21 @@ Bấm **"Kiểm tra"** cho một kịch bản: trang chạy bài kiểm tra end-
 - Cố tình tắt Kibana trong lúc kiểm tra → **Không đạt** kèm lý do đọc được, server không treo, khóa được nhả.
 - Đang live → không bấm được Kiểm tra.
 - Bấm Hủy giữa chừng → trong ≤ 15 giây Spark master không còn app `qa-*`, bật live lại có core ngay.
+
+## Kết quả (29/10)
+
+Bước tiến trình suy từ file: chưa có `data/raw/setup/qa-<attack>-*.log` → bước 1; có log chưa `STREAM READY` → 2;
+chưa có dòng `First` → 3; chưa có `-restart.log` → 4; có → 5. Kill bằng `taskkill /T` vì `verify_realtime.py`
+có tiến trình con (docker client, simulator).
+
+Kiểm chứng:
+- [x] DDoS → **Đạt** sau 3 phút 20 giây: độ trễ 18,3 giây, 105 cảnh báo trước = 105 sau khởi động lại,
+  `alert-history` 2 → 3. Spark master trống ngay sau đó.
+- [x] Hủy giữa chừng (scan, giây 45) → xong ở giây 49, Spark master trống, lịch sử ghi "Đã hủy".
+- [x] Đang kiểm tra → bật live / kiểm tra lần 2 bị từ chối (409).
+- [x] Không đạt hiện đúng lý do và 20 dòng log cuối, khóa được nhả.
+- [ ] **Bình thường → Không đạt (6 cửa sổ báo nhầm, cho phép ≤ 2).** Không phải lỗi console: hai IP bình thường có
+  một phản hồi 5xx, điểm 7,51 và 7,53 sát ngưỡng 7,49; một IP nằm trong 5 cửa sổ trượt nên thành 6 cửa sổ.
+  Cùng seed 73, báo cáo của Như ghi 0 vì timestamp theo giờ chạy làm ranh giới cửa sổ đổi. Bài kiểm tra
+  `none` vì vậy **không ổn định**; không sửa model/ngưỡng/`verify_realtime.py` (ngoài phạm vi), đã báo người dùng.
+- [ ] Tắt Kibana giữa chừng: chưa thử (tránh làm gián đoạn stack); đường lỗi đã được kiểm qua trường hợp trên.

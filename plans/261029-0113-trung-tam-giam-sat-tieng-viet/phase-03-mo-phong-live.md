@@ -1,7 +1,7 @@
 ---
 phase: 3
 title: "Phase 03: Mô phỏng tấn công live"
-status: todo
+status: done
 priority: P1
 effort: "2h"
 dependencies: [1, 2]
@@ -71,3 +71,22 @@ Cảnh báo hiện ngay ở vùng Cảnh báo (Phase 02).
 - `POST /api/live/scenario {"attack": "rm -rf"}` → HTTP 400.
 - Đóng cửa sổ terminal của server khi stream đang chạy → mở lại server thì driver cũ bị dọn, bật lại chạy bình thường.
 - Bấm "Bật" hai lần liên tiếp → chỉ có **một** driver dùng `stream/console/checkpoint` (`pgrep -c` = 1).
+
+## Kết quả (29/10)
+
+Scout bằng tay trước khi code: `cores.max=2` → app RUNNING 2/4 lõi (R1 đúng); kill client `docker compose exec`
+→ driver trong container vẫn sống (R3 đúng); `pkill -f stream/console/checkpoint` dọn trong 0,8 giây.
+
+Thay đổi so với thiết kế: bỏ nút "Gia hạn" (Bật lại sau khi tự tắt làm đúng việc đó, checkpoint giữ tiến độ).
+Ngoài số cửa sổ bị cảnh báo, trang hiện thêm **số IP tấn công bị cảnh báo / tổng IP**, vì cửa sổ trượt 1 phút
+làm một IP nằm trong tới 5 cửa sổ (275 cửa sổ chỉ là vài chục IP).
+
+Kiểm chứng (qua API thật, `console/runner.py`):
+- [x] Bật → sẵn sàng sau 20–22 giây, Spark master: `stream_detect` RUNNING 2 lõi.
+- [x] DDoS: cảnh báo cho IP tấn công sau **11,1 giây** kể từ `first_attack_at`.
+- [x] Bình thường 90 giây (183 dòng log): 0 báo nhầm.
+- [x] Dừng → 3 giây sau `pgrep` = 0 và Spark master không còn app.
+- [x] Bật lần 2, chạy kịch bản chồng, kiểm tra khi đang live → 409 kèm câu tiếng Việt; `{"attack":"rm -rf"}` → 400;
+  thiếu `X-Console` hoặc `Origin` lạ → 403.
+- [x] Kill cứng server khi stream đang chạy (còn 2 tiến trình driver) → mở lại server: `pgrep` = 0, trang báo
+  "Đã dọn bộ phát hiện còn sót từ lần chạy trước."

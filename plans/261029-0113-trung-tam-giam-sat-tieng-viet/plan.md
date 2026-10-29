@@ -1,7 +1,7 @@
 ---
 title: "Trung tâm giám sát tiếng Việt — trang điều khiển demo cho báo điện tử bị tấn công"
 description: "Một trang web tiếng Việt (server Python stdlib + HTML) gom hạ tầng Spark/HDFS/ES, mô phỏng tấn công, cảnh báo trực tiếp có giải thích, kiểm tra tự động Đạt/Không đạt và dashboard Kibana nhúng."
-status: in-progress
+status: done
 priority: P2
 effort: "~9h"
 branch: "feat/console (tách từ main)"
@@ -61,11 +61,11 @@ Server làm proxy cho mọi API nên trình duyệt không vướng CORS hay `X-
 |---|---|---|---|---|---|
 | 01 | [Khung server + thẻ Hạ tầng](phase-01-server-va-the-ha-tang.md) | P1 | 2h | — | done |
 | 02 | [Cảnh báo trực tiếp + từ điển tiếng Việt](phase-02-canh-bao-truc-tiep.md) | P1 | 1.5h | 01 | done |
-| 03 | [Mô phỏng tấn công live](phase-03-mo-phong-live.md) | P1 | 2h | 01, 02 | todo |
-| 04 | [Kiểm tra tự động Đạt / Không đạt](phase-04-kiem-tra-tu-dong.md) | P1 | 1.5h | 01, 03 | todo |
-| 05 | [Nhúng dashboard Kibana](phase-05-nhung-kibana.md) | P2 | 0.5h | 01 | todo |
-| 06 | [Việt hóa tiêu đề Kibana](phase-06-viet-hoa-kibana.md) | P2 | 0.5h | 05 (Như đã đồng ý 29/10) | todo |
-| 07 | [Tích hợp, README, CLAUDE.md](phase-07-tich-hop-tai-lieu.md) | P2 | 1h | 01–05 | todo |
+| 03 | [Mô phỏng tấn công live](phase-03-mo-phong-live.md) | P1 | 2h | 01, 02 | done |
+| 04 | [Kiểm tra tự động Đạt / Không đạt](phase-04-kiem-tra-tu-dong.md) | P1 | 1.5h | 01, 03 | done |
+| 05 | [Nhúng dashboard Kibana](phase-05-nhung-kibana.md) | P2 | 0.5h | 01 | done |
+| 06 | [Việt hóa tiêu đề Kibana](phase-06-viet-hoa-kibana.md) | P2 | 0.5h | 05 (Như đã đồng ý 29/10) | done |
+| 07 | [Tích hợp, README, CLAUDE.md](phase-07-tich-hop-tai-lieu.md) | P2 | 1h | 01–05 | done |
 
 Chế độ `--deep`: Phase 01 viết chi tiết. Phase 02+ có sẵn mục tiêu, file và tiêu chí nghiệm thu,
 nhưng **trước khi làm mỗi phase phải scout lại** (đọc file liên quan, curl API thật) và cập nhật phase đó.

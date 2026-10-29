@@ -76,15 +76,37 @@
       </div>
     </section>
 
-    <section id="mo-phong" class="section section-soon" aria-labelledby="mo-phong-title">
+    <section id="mo-phong" class="section" aria-labelledby="mo-phong-title">
       <header class="section-head">
         <span class="section-no">2</span>
         <div>
           <h2 id="mo-phong-title">Mô phỏng tấn công</h2>
-          <p>Bật bộ phát hiện, chọn một kịch bản tấn công vào trang báo rồi bấm Chạy.</p>
+          <p>Bật bộ phát hiện, chọn một kịch bản tấn công vào trang báo rồi bấm Chạy.
+            Mỗi kịch bản phát 90 giây log, tấn công bắt đầu ở giây thứ 20.</p>
         </div>
       </header>
-      <p class="soon">Sẽ có ở bước sau.</p>
+      <div class="steps">
+        <div class="step-box" id="live-box">
+          <h3><span class="step-no">Bước 1</span> Bộ phát hiện thời gian thực</h3>
+          <p class="role">Một job Spark Streaming đọc log mới mỗi 10 giây, tính đặc trưng theo cửa sổ 5 phút,
+            chấm điểm bằng model KMeans đã huấn luyện và ghi cảnh báo vào Elasticsearch.</p>
+          <p class="live-state" id="live-state" aria-live="polite">Đang đọc trạng thái…</p>
+          <div class="actions">
+            <button type="button" class="btn" id="live-start">Bật bộ phát hiện</button>
+            <button type="button" class="btn-ghost" id="live-stop" hidden>Dừng</button>
+          </div>
+        </div>
+        <div class="step-box" id="scenario-box">
+          <h3><span class="step-no">Bước 2</span> Chọn kịch bản</h3>
+          <div class="scenarios" id="scenario-list" role="radiogroup" aria-label="Kịch bản"></div>
+          <div class="actions">
+            <button type="button" class="btn" id="scenario-run" disabled>Chạy kịch bản</button>
+          </div>
+          <p class="hint" id="scenario-hint"></p>
+        </div>
+      </div>
+      <div class="run-panel" id="scenario-panel" hidden aria-live="polite"></div>
+      <p class="action-msg" id="live-msg" role="status"></p>
     </section>
 
     <section id="canh-bao" class="section" aria-labelledby="canh-bao-title">
@@ -96,7 +118,7 @@
             Model chỉ biết <em>lệch ở điểm nào</em>, không tự biết đó là kiểu tấn công gì.</p>
         </div>
       </header>
-      <div class="tabs" role="tablist" aria-label="Nguồn cảnh báo">
+      <div class="tabs" id="alerts-tabs" role="tablist" aria-label="Nguồn cảnh báo">
         <button type="button" role="tab" data-source="stream" aria-selected="true">Thời gian thực <span class="count"></span></button>
         <button type="button" role="tab" data-source="sim" aria-selected="false">Lô mô phỏng <span class="count"></span></button>
         <button type="button" role="tab" data-source="nasa" aria-selected="false">Log NASA thật <span class="count"></span></button>
@@ -129,26 +151,51 @@
       </details>
     </section>
 
-    <section id="kiem-tra" class="section section-soon" aria-labelledby="kiem-tra-title">
+    <section id="kiem-tra" class="section" aria-labelledby="kiem-tra-title">
       <header class="section-head">
         <span class="section-no">4</span>
         <div>
           <h2 id="kiem-tra-title">Kiểm tra tự động</h2>
-          <p>Chạy bài kiểm tra đầu-cuối: tấn công → phát hiện → cảnh báo, rồi báo Đạt hoặc Không đạt.</p>
+          <p>Chạy bài kiểm tra đầu-cuối: tấn công → phát hiện → cảnh báo trong Kibana → khởi động lại không ghi trùng,
+            rồi báo Đạt hoặc Không đạt. Mỗi lượt mất khoảng 4–5 phút.</p>
         </div>
       </header>
-      <p class="soon">Sẽ có ở bước sau.</p>
+      <div class="step-box">
+        <div class="check-controls">
+          <label for="check-attack">Kịch bản kiểm tra</label>
+          <select id="check-attack"></select>
+          <button type="button" class="btn" id="check-run">Chạy kiểm tra</button>
+          <button type="button" class="btn-ghost" id="check-cancel" hidden>Hủy</button>
+        </div>
+        <p class="hint" id="check-hint"></p>
+      </div>
+      <div class="run-panel" id="check-panel" hidden aria-live="polite"></div>
+      <p class="action-msg" id="check-msg" role="status"></p>
+      <h3 class="sub-head">Các lần kiểm tra gần đây</h3>
+      <div class="table-wrap">
+        <table class="history">
+          <thead><tr><th>Lúc chạy</th><th>Kịch bản</th><th>Kết quả</th><th>Chi tiết</th></tr></thead>
+          <tbody id="check-history"><tr><td colspan="4">Chưa có lượt kiểm tra nào.</td></tr></tbody>
+        </table>
+      </div>
     </section>
 
-    <section id="dashboard" class="section section-soon" aria-labelledby="dashboard-title">
+    <section id="dashboard" class="section" aria-labelledby="dashboard-title">
       <header class="section-head">
         <span class="section-no">5</span>
         <div>
           <h2 id="dashboard-title">Dashboard Kibana</h2>
-          <p>Biểu đồ thống kê lỗi và cảnh báo, nhúng thẳng vào trang.</p>
+          <p>Biểu đồ thống kê lỗi và cảnh báo, nhúng thẳng vào trang. Tự làm mới mỗi 10 giây.</p>
         </div>
       </header>
-      <p class="soon">Sẽ có ở bước sau.</p>
+      <div class="tabs" role="tablist" aria-label="Dashboard">
+        <button type="button" role="tab" data-dashboard="nhu-anomaly-alerts" aria-selected="true">Bất thường &amp; cảnh báo</button>
+        <button type="button" role="tab" data-dashboard="nhu-log-overview" aria-selected="false">Tổng quan log</button>
+      </div>
+      <p class="tab-note"><a class="open-link" id="dashboard-open" href="#" target="_blank" rel="noopener">Mở trong Kibana ↗</a></p>
+      <div class="dashboard-frame" id="dashboard-frame">
+        <p class="alerts-empty">Đang kiểm tra Kibana…</p>
+      </div>
     </section>
   </main>
 

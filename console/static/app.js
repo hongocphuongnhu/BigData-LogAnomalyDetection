@@ -1,4 +1,4 @@
-// Trung tam giam sat: doc /api/infra moi 5 giay va ve the Ha tang.
+// Trung tam giam sat: ve 5 vung (ha tang, mo phong, canh bao, kiem tra, dashboard) tu API cua console/server.py.
 // Dung textContent, khong ghep chuoi HTML tu du lieu API (ten index, ten app co the la bat ky).
 "use strict";
 
@@ -152,6 +152,7 @@ async function refresh() {
     renderHdfs(data.hdfs, data.links);
     renderEs(data.es, data.links);
     renderKibana(data.kibana, data.links);
+    updateDashboard(data.kibana, data.links);
     document.getElementById("updated").textContent = `Cập nhật lúc ${timeVi.format(new Date())}`;
   } catch (error) {
     banner.hidden = false;
@@ -231,7 +232,7 @@ async function refreshAlerts() {
     const data = await response.json();
     if (source !== alertSource || label !== alertLabel) return; // nguoi xem da doi tab/nhan trong luc cho
     if (!data.ok) return list.replaceChildren(alertMessage(`Không đọc được cảnh báo: ${data.error}.`, true));
-    for (const button of document.querySelectorAll(".tabs button")) {
+    for (const button of document.querySelectorAll("#alerts-tabs button")) {
       const count = data.by_source[button.dataset.source] || 0;
       button.querySelector(".count").textContent = numberVi.format(count);
     }
@@ -261,7 +262,7 @@ function selectAlertLabel(label) {
 function selectAlertSource(source) {
   alertSource = source;
   alertLabel = "";
-  for (const button of document.querySelectorAll(".tabs button")) {
+  for (const button of document.querySelectorAll("#alerts-tabs button")) {
     button.setAttribute("aria-selected", String(button.dataset.source === source));
   }
   document.getElementById("alerts-note").textContent = SOURCE_NOTES[source];
@@ -269,8 +270,286 @@ function selectAlertSource(source) {
   refreshAlerts();
 }
 
-for (const button of document.querySelectorAll(".tabs button")) {
+for (const button of document.querySelectorAll("#alerts-tabs button")) {
   button.addEventListener("click", () => selectAlertSource(button.dataset.source));
+}
+
+// --- POST: header X-Console + JSON bat buoc (server tu choi request thieu, chong CSRF) ---
+async function post(path, body = {}) {
+  try {
+    const response = await fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Console": "1" },
+      body: JSON.stringify(body),
+    });
+    return await response.json();
+  } catch (error) {
+    return { ok: false, error: "Mất kết nối tới server trung tâm" };
+  }
+}
+
+function setMessage(id, result) {
+  const node = document.getElementById(id);
+  node.textContent = result ? (result.ok ? result.message : result.error) : "";
+  node.classList.toggle("is-ok", Boolean(result && result.ok));
+}
+
+function minutesSeconds(total) {
+  const minutes = Math.floor(total / 60);
+  const seconds = total % 60;
+  return minutes ? `${minutes} phút ${seconds} giây` : `${seconds} giây`;
+}
+
+function statusPill(state, text) {
+  return el("span", { class: `status status-${state}` }, text);
+}
+
+// --- muc 2: mo phong --------------------------------------------------------
+const LIVE_POLL_MS = 2000;
+let liveStatus = null;
+let scenarioChoice = "ddos";
+
+function renderScenarioChoices(scenarios) {
+  const box = document.getElementById("scenario-list");
+  if (box.childElementCount) return;
+  box.replaceChildren(...scenarios.map((item) => {
+    const input = el("input", { type: "radio", name: "scenario", value: item.key });
+    input.checked = item.key === scenarioChoice;
+    input.addEventListener("change", () => { scenarioChoice = item.key; });
+    return el("label", { class: "scenario" }, input, el("b", {}, item.label), el("span", {}, item.story));
+  }));
+  const select = document.getElementById("check-attack");
+  select.replaceChildren(...scenarios.map((item) => el("option", { value: item.key }, item.label)));
+  select.value = "ddos";
+}
+
+function renderLiveState(data) {
+  const live = data.live;
+  const state = document.getElementById("live-state");
+  const start = document.getElementById("live-start");
+  const stop = document.getElementById("live-stop");
+  start.hidden = Boolean(live);
+  stop.hidden = !live;
+  start.disabled = data.job !== null;
+  stop.disabled = Boolean(live && live.phase === "stopping");
+  if (data.job === "check") {
+    state.replaceChildren(statusPill("pending", "Tạm khóa"), "Đang chạy kiểm tra tự động ở mục 4.");
+  } else if (!live) {
+    state.replaceChildren(statusPill("idle", "Đang tắt"), "Bấm Bật, sau khoảng 35 giây sẽ sẵn sàng.");
+  } else if (live.phase === "starting") {
+    state.replaceChildren(statusPill("pending", "Đang khởi động"), `Đã chờ ${live.elapsed_s} giây (thường mất khoảng 35 giây).`);
+  } else if (live.phase === "ready") {
+    state.replaceChildren(statusPill("ok", "Sẵn sàng"), `Dùng 2 lõi CPU · tự tắt sau ${minutesSeconds(live.remaining_s ?? 0)}.`);
+  } else {
+    state.replaceChildren(statusPill("pending", "Đang dừng"), "Đang dọn job Spark trong container…");
+  }
+  const ready = Boolean(live && live.phase === "ready");
+  const busy = Boolean(data.scenario && data.scenario.running);
+  document.getElementById("scenario-run").disabled = !ready || busy;
+  document.getElementById("scenario-hint").textContent = !ready
+    ? "Bật bộ phát hiện ở bước 1 trước."
+    : busy ? "Đang chạy một kịch bản, chờ xong rồi chạy tiếp." : "";
+}
+
+function scenarioMetric(value, label) {
+  return metric(typeof value === "number" ? numberVi.format(value) : value, label);
+}
+
+function renderScenario(scenario) {
+  const panel = document.getElementById("scenario-panel");
+  panel.hidden = !scenario;
+  if (!scenario) return;
+  panel.className = `run-panel${scenario.ok === true ? " is-ok" : scenario.ok === false ? " is-bad" : ""}`;
+  const percent = Math.min(scenario.elapsed_s / scenario.duration_s, 1) * 100;
+  const metrics = [
+    scenarioMetric(`${numberVi.format(scenario.published)}/${numberVi.format(scenario.total)}`, "dòng log đã phát"),
+  ];
+  if (scenario.attack !== "none") {
+    metrics.push(scenarioMetric(scenario.attack_ips, "IP tấn công"), scenarioMetric(scenario.attack_records, "request tấn công"));
+  }
+  if (scenario.attack === "none") {
+    metrics.push(scenarioMetric(scenario.new_alerts, "cảnh báo (báo nhầm)"));
+  } else {
+    metrics.push(scenarioMetric(`${numberVi.format(scenario.flagged_ips)}/${numberVi.format(scenario.attack_ips)}`, "IP tấn công bị cảnh báo"),
+      scenarioMetric(scenario.new_alerts, "cửa sổ 5 phút bị cảnh báo"));
+  }
+  if (scenario.latency_s != null) metrics.push(scenarioMetric(`${decimalVi.format(scenario.latency_s)} giây`, "độ trễ phát hiện"));
+  panel.replaceChildren(
+    el("h3", {}, `Kịch bản: ${scenario.label}`),
+    el("p", { class: "live-state" }, scenario.running ? statusPill("pending", "Đang chạy") : statusPill("idle", "Đã xong"), scenario.stage),
+    el("div", { class: "progress", role: "img", "aria-label": `Đã chạy ${scenario.elapsed_s} trên ${scenario.duration_s} giây` },
+      el("span", { style: `width:${percent}%` })),
+    el("div", { class: "metrics" }, ...metrics),
+    el("p", { class: "verdict" }, scenario.verdict));
+}
+
+async function refreshLive() {
+  try {
+    const response = await fetch("/api/live/status", { cache: "no-store" });
+    liveStatus = await response.json();
+  } catch (error) {
+    return;
+  }
+  renderScenarioChoices(liveStatus.scenarios);
+  renderLiveState(liveStatus);
+  renderScenario(liveStatus.scenario);
+  const notice = document.getElementById("live-msg");
+  if (liveStatus.notice && !notice.textContent) setMessage("live-msg", { ok: false, error: liveStatus.notice });
+}
+
+document.getElementById("live-start").addEventListener("click", async () => {
+  setMessage("live-msg", await post("/api/live/start"));
+  refreshLive();
+});
+document.getElementById("live-stop").addEventListener("click", async () => {
+  setMessage("live-msg", await post("/api/live/stop"));
+  refreshLive();
+});
+document.getElementById("scenario-run").addEventListener("click", async () => {
+  const result = await post("/api/live/scenario", { attack: scenarioChoice });
+  setMessage("live-msg", result);
+  if (result.ok) selectAlertSource("stream");
+  refreshLive();
+});
+
+// --- muc 4: kiem tra tu dong --------------------------------------------------
+const CHECK_POLL_MS = 3000;
+const CHECK_STEPS = [
+  "Chờ hệ thống cảnh báo yên lặng (tối đa 110 giây)",
+  "Khởi động bộ phát hiện riêng cho bài kiểm tra",
+  "Phát traffic tấn công",
+  "Đã thấy cảnh báo đầu tiên, chờ luật Kibana ghi lịch sử",
+  "Khởi động lại bộ phát hiện để kiểm tra không ghi trùng",
+  "Kết quả",
+];
+// Kich ban "none" khong cho yen lang va khong khoi dong lai: chi 3 buoc (so buoc server -> vi tri).
+const CHECK_STEPS_NORMAL = { 2: 0, 3: 1, 6: 2 };
+const CHECK_STEPS_NORMAL_TEXT = ["Khởi động bộ phát hiện riêng cho bài kiểm tra", "Phát traffic bình thường 3 phút", "Kết quả"];
+const dateTimeShort = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
+
+function checkDetails(item) {
+  const report = item.report || {};
+  if (!item.passed) return item.error || "Không rõ lý do";
+  if ("false_positive_windows" in report) {
+    return `${report.false_positive_windows} lần báo nhầm trong ${numberVi.format(report.records || 0)} dòng log bình thường (cho phép ≤ 2)`;
+  }
+  const parts = [];
+  if (report.latency_seconds != null) parts.push(`phát hiện sau ${decimalVi.format(report.latency_seconds)} giây`);
+  if (report.alert_documents_before_restart != null) {
+    parts.push(`${report.alert_documents_before_restart} cảnh báo trước và ${report.alert_documents_after_restart} sau khởi động lại (không ghi trùng)`);
+  }
+  if (report.history_after != null) parts.push(`luật Kibana ghi thêm ${report.history_after - report.history_before} lần vào lịch sử`);
+  return parts.join(" · ");
+}
+
+function renderCheck(current) {
+  const panel = document.getElementById("check-panel");
+  panel.hidden = !current;
+  if (!current) return;
+  const result = current.result;
+  panel.className = `run-panel${result ? (result.passed ? " is-ok" : " is-bad") : ""}`;
+  const normal = current.attack === "none";
+  const texts = normal ? CHECK_STEPS_NORMAL_TEXT : CHECK_STEPS;
+  const now = normal ? (CHECK_STEPS_NORMAL[current.step] ?? 0) : current.step - 1;
+  const steps = texts.map((text, index) => el("li", {
+    class: index < now || (result && index === now) ? "is-done" : index === now ? "is-now" : "",
+  }, text));
+  const children = [
+    el("h3", {}, `Kiểm tra: ${current.label}`),
+    el("p", { class: "live-state" },
+      current.running ? statusPill("pending", current.cleaning ? "Đang dọn" : "Đang chạy") : statusPill("idle", "Đã xong"),
+      `Đã chạy ${minutesSeconds(current.elapsed_s)}${current.running && !result ? " · ước tính 4–5 phút" : ""}`),
+    el("ol", { class: "stepper" }, ...steps),
+  ];
+  if (result) {
+    children.push(el("p", { class: "verdict" }, result.passed ? "Đạt" : (result.cancelled ? "Đã hủy" : "Không đạt"),
+      ` — ${checkDetails(result)}`));
+    if (!result.passed && result.tail && result.tail.length) children.push(el("pre", { class: "logtail" }, result.tail.join("\n")));
+  } else if (current.tail && current.tail.length) {
+    children.push(el("pre", { class: "logtail" }, current.tail.join("\n")));
+  }
+  panel.replaceChildren(...children);
+}
+
+function renderHistory(history) {
+  const body = document.getElementById("check-history");
+  if (!history.length) return body.replaceChildren(el("tr", {}, el("td", { colspan: "4" }, "Chưa có lượt kiểm tra nào.")));
+  body.replaceChildren(...history.map((item) => el("tr", {},
+    el("td", {}, dateTimeShort.format(new Date(item.started_at))),
+    el("td", {}, item.label),
+    el("td", { class: item.passed ? "pass" : "fail" }, item.passed ? "Đạt" : (item.cancelled ? "Đã hủy" : "Không đạt")),
+    el("td", {}, `${checkDetails(item)} · ${minutesSeconds(item.duration_s || 0)}`))));
+}
+
+async function refreshCheck() {
+  let data;
+  try {
+    const response = await fetch("/api/check/status", { cache: "no-store" });
+    data = await response.json();
+  } catch (error) {
+    return;
+  }
+  renderCheck(data.current);
+  renderHistory(data.history);
+  const run = document.getElementById("check-run");
+  const cancel = document.getElementById("check-cancel");
+  run.disabled = data.job !== null;
+  cancel.hidden = data.job !== "check";
+  cancel.disabled = Boolean(data.current && data.current.cleaning);
+  document.getElementById("check-hint").textContent = data.job === "live"
+    ? "Hãy dừng mô phỏng ở mục 2 trước: bài kiểm tra tự chạy bộ phát hiện riêng và cần cả 4 lõi CPU."
+    : "";
+}
+
+document.getElementById("check-run").addEventListener("click", async () => {
+  setMessage("check-msg", await post("/api/check", { attack: document.getElementById("check-attack").value }));
+  refreshCheck();
+  refreshLive();
+});
+document.getElementById("check-cancel").addEventListener("click", async () => {
+  setMessage("check-msg", await post("/api/check/cancel"));
+  refreshCheck();
+});
+
+// --- muc 5: dashboard Kibana ---------------------------------------------------
+// Chi tao lai iframe khi doi tab hoac Kibana vua song lai, khong phai moi lan poll (se nap lai ca dashboard).
+let dashboardId = "nhu-anomaly-alerts";
+let dashboardShown = null;
+
+function dashboardUrl(base, id, embed) {
+  const url = `${base}/app/dashboards#/view/${id}`;
+  if (!embed) return url;
+  const time = id === "nhu-anomaly-alerts" ? ",time:(from:now-30m,to:now)" : "";
+  return `${url}?embed=true&_g=(refreshInterval:(pause:!f,value:10000)${time})`;
+}
+
+function updateDashboard(kibana, links) {
+  const frame = document.getElementById("dashboard-frame");
+  document.getElementById("dashboard-open").href = dashboardUrl(links.kibana, dashboardId, false);
+  const ready = kibana.ok && kibana.level === "available";
+  const key = ready ? dashboardId : "down";
+  if (key === dashboardShown) return;
+  dashboardShown = key;
+  if (!ready) {
+    return frame.replaceChildren(el("p", { class: "alerts-empty is-error" },
+      kibana.ok ? "Kibana đang khởi động, dashboard sẽ hiện khi sẵn sàng." : `Kibana chưa sẵn sàng: ${kibana.error}.`));
+  }
+  frame.replaceChildren(el("iframe", {
+    src: dashboardUrl(links.kibana, dashboardId, true),
+    title: dashboardId === "nhu-anomaly-alerts" ? "Dashboard bất thường và cảnh báo" : "Dashboard tổng quan log",
+    loading: "lazy",
+  }));
+}
+
+for (const button of document.querySelectorAll("[data-dashboard]")) {
+  button.addEventListener("click", () => {
+    dashboardId = button.dataset.dashboard;
+    for (const other of document.querySelectorAll("[data-dashboard]")) {
+      other.setAttribute("aria-selected", String(other === button));
+    }
+    dashboardShown = null;
+    refresh();
+  });
 }
 
 // --- sang/toi: luu lua chon trong localStorage (co the bi chan -> bo qua) ---
@@ -300,3 +579,7 @@ refresh();
 setInterval(refresh, POLL_MS);
 selectAlertSource("stream");
 setInterval(refreshAlerts, ALERT_POLL_MS);
+refreshLive();
+setInterval(refreshLive, LIVE_POLL_MS);
+refreshCheck();
+setInterval(refreshCheck, CHECK_POLL_MS);
