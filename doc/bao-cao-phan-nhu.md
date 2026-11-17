@@ -8,7 +8,7 @@ Tài liệu này cung cấp phần nội dung của Như để ghép vào báo c
 
 ## 1. Giới thiệu đề tài
 
-HTTP access log ghi lại thời điểm, địa chỉ client, phương thức, đường dẫn, mã trạng thái và kích thước phản hồi của từng request. Khi lưu lượng tăng, việc kiểm tra từng dòng bằng tay khó phát hiện nhanh các hành vi như dò đường dẫn, thử mật khẩu hoặc flood làm quá tải dịch vụ.
+HTTP access log ghi lại thời điểm, địa chỉ client, phương thức, đường dẫn, mã trạng thái và kích thước phản hồi của từng request. Khi lưu lượng tăng, việc kiểm tra từng dòng bằng tay khó phát hiện nhanh các hành vi như dò đường dẫn [16], thử mật khẩu [14] hoặc flood làm quá tải dịch vụ [15].
 
 Mục tiêu của đồ án là xây dựng quy trình lưu trữ, xử lý và khai thác log bằng công nghệ Big Data. Đầu vào gồm log thật NASA và log simulator có nhãn. Đầu ra gồm dữ liệu đã làm sạch, đặc trưng theo cửa sổ thời gian, điểm bất thường, dashboard thống kê lỗi và cảnh báo có thể truy vết.
 
@@ -28,25 +28,25 @@ Giá trị của sản phẩm nằm ở việc kết nối dữ liệu thô vớ
 
 ### 3.1 HDFS
 
-HDFS chia file thành các block và phân phối block trên DataNode. NameNode quản lý namespace, thông tin file và vị trí block; DataNode lưu và phục vụ dữ liệu. Replication giúp có nhiều bản sao khi cụm có nhiều DataNode. Trong môi trường đồ án chỉ có một DataNode, replication được đặt bằng 1 và block size là 128 MB.
+HDFS chia file thành các block và phân phối block trên DataNode. NameNode quản lý namespace, thông tin file và vị trí block; DataNode lưu và phục vụ dữ liệu [1], [17]. Replication giúp có nhiều bản sao khi cụm có nhiều DataNode. Kích thước block thường dùng của HDFS là 128 MB [1]. Trong môi trường đồ án chỉ có một DataNode, replication được đặt bằng 1 và block size giữ 128 MB.
 
-Data lake được tổ chức thành bronze, silver, gold. Bronze giữ dữ liệu JSONL đầu vào; silver lưu Parquet sau làm sạch; gold lưu feature, score và alert. Partition theo dt/hour giúp lọc dữ liệu theo thời gian. Parquet có cấu trúc theo cột và nén, phù hợp với truy vấn phân tích chỉ đọc một phần thuộc tính.
+Data lake được tổ chức thành ba tầng bronze, silver, gold theo mẫu kiến trúc medallion, trong đó chất lượng và cấu trúc dữ liệu tăng dần qua từng tầng [5]. Bronze giữ dữ liệu JSONL đầu vào; silver lưu Parquet sau làm sạch; gold lưu feature, score và alert. Partition theo dt/hour giúp lọc dữ liệu theo thời gian. Parquet là định dạng file lưu theo cột [2], phù hợp với truy vấn phân tích chỉ đọc một phần thuộc tính.
 
 HDFS được chọn làm kho dữ liệu xử lý theo lô. Elasticsearch được dùng cho truy vấn phục vụ dashboard. Hai hệ thống có vai trò khác nhau, nên dữ liệu được xử lý bằng Spark rồi đẩy phần cần khai thác sang ES.
 
 ### 3.2 Elasticsearch và Kibana
 
-Elasticsearch tổ chức dữ liệu thành document trong index và hỗ trợ tìm kiếm, lọc, tổng hợp. Mapping xác định kiểu trường để việc tìm kiếm và aggregation đúng nghĩa. Field ip được map keyword vì dữ liệu NASA có thể chứa hostname; date được dùng cho event_time/window_start/detected_at; score và ratio là số thực.
+Elasticsearch tổ chức dữ liệu thành document trong index [6] và hỗ trợ tìm kiếm, lọc, tổng hợp. Mapping xác định kiểu trường để việc tìm kiếm và aggregation đúng nghĩa [8]. Field ip được map keyword [7] vì dữ liệu NASA có thể chứa hostname; date được dùng cho event_time/window_start/detected_at; score và ratio là số thực.
 
-Kibana dùng data view để truy vấn index và xây dựng dashboard. Lens hỗ trợ các KPI, biểu đồ thời gian, phân bố status, top client và top path. Saved search hiển thị danh sách cảnh báo cụ thể. File dashboards.ndjson chứa saved objects cùng các tham chiếu cần thiết để import trên môi trường khác.
+Kibana dùng data view để truy vấn index và xây dựng dashboard [10]. Lens [12] hỗ trợ các KPI, biểu đồ thời gian, phân bố status, top client và top path. Saved search hiển thị danh sách cảnh báo cụ thể. File dashboards.ndjson chứa saved objects cùng các tham chiếu cần thiết để import trên môi trường khác.
 
 ### 3.3 Structured Streaming
 
-Structured Streaming xử lý dữ liệu mới bằng các micro-batch và dùng cùng biểu thức DataFrame với batch. Job đọc JSON bằng schema cố định, parse event_time UTC, đặt watermark 2 phút và gom theo (ip, cửa sổ 5 phút) với bước trượt 1 phút.
+Structured Streaming xử lý dữ liệu mới bằng các micro-batch và dùng cùng biểu thức DataFrame với batch [3], [4]. Job đọc JSON bằng schema cố định, parse event_time UTC, đặt watermark 2 phút và gom theo (ip, cửa sổ 5 phút) với bước trượt 1 phút.
 
-Update mode phát ra các cửa sổ thay đổi ở mỗi micro-batch. foreachBatch chấm điểm và ghi dữ liệu sang ES. Trigger mặc định là 10 giây; thời gian batch thực tế còn phụ thuộc tài nguyên và số trạng thái đang giữ. Watermark hỗ trợ giới hạn trạng thái và xác định dữ liệu quá muộn; không phải là cam kết độ trễ cảnh báo.
+Update mode phát ra các cửa sổ thay đổi ở mỗi micro-batch [3]. foreachBatch chấm điểm và ghi dữ liệu sang ES. Trigger mặc định là 10 giây; thời gian batch thực tế còn phụ thuộc tài nguyên và số trạng thái đang giữ. Watermark hỗ trợ giới hạn trạng thái và xác định dữ liệu quá muộn; không phải là cam kết độ trễ cảnh báo.
 
-Checkpoint lưu tiến độ đọc file và trạng thái aggregation. Simulator ghi file tạm rồi atomic rename để Spark không đọc file đang ghi dở. Sink sử dụng document ID ổn định để retry cùng cửa sổ ghi đè document, thay vì thêm bản sao.
+Checkpoint lưu tiến độ đọc file và trạng thái aggregation [3]. Hướng dẫn của Spark yêu cầu file phải được đặt vào thư mục nguồn một cách nguyên tử [3], nên simulator ghi file tạm rồi rename để Spark không đọc file đang ghi dở. Sink sử dụng document ID ổn định để retry cùng cửa sổ ghi đè document, thay vì thêm bản sao: khi index vào một ID đã tồn tại, Elasticsearch cập nhật document đó và tăng version [6].
 
 ## 4. Kiến trúc và cài đặt
 
@@ -66,7 +66,7 @@ Cấu hình dfs.replication phải truyền ở Spark client. Chỉ đặt repli
 - log-alerts: các cửa sổ vượt ngưỡng; có score, threshold, severity, reason, detected_at và detector.
 - alert-history: bằng chứng native Kibana rule đã thực thi Index action.
 
-Export dùng connector elasticsearch-spark-30, bulk 2.000 document, tạm tắt refresh_interval rồi khôi phục cấu hình trong finally. Các cột Vector của ML được loại khỏi document serving. Field error_flag/cache_miss_flag dạng số giúp tính tỷ lệ lỗi và cache MISS bằng average trong Lens.
+Export dùng connector elasticsearch-spark-30 [9], bulk 2.000 document, tạm tắt refresh_interval rồi khôi phục cấu hình trong finally. Các cột Vector của ML được loại khỏi document serving. Field error_flag/cache_miss_flag dạng số giúp tính tỷ lệ lỗi và cache MISS bằng average trong Lens.
 
 ### 4.3 Chấm điểm streaming
 
@@ -82,7 +82,7 @@ Log Overview hiển thị số request, tỷ lệ lỗi, số client, request th
 
 Anomaly & Alerts hiển thị số cửa sổ bất thường, client bị ảnh hưởng, số lần rule kích hoạt, bảng cảnh báo mới nhất, đường score/threshold, nhãn thật so với dự đoán và các lý do cảnh báo. Auto-refresh là 10 giây. Panel cluster dành cho model chính thức; để trống khi đang dùng fallback.
 
-Native Elasticsearch query rule chạy mỗi 30 giây, kiểm tra log-alerts theo detected_at trong một phút gần nhất, điều kiện count > 0. Rule dùng Server log action và Index action vào alert-history. Action chạy khi trạng thái chuyển sang nhóm cảnh báo, tránh ghi lặp lại mỗi lần lịch chạy nếu cùng trạng thái còn active.
+Native Elasticsearch query rule [11] dựa trên cơ chế alerting của Kibana [13], chạy mỗi 30 giây, kiểm tra log-alerts theo detected_at trong một phút gần nhất, điều kiện count > 0. Rule dùng Server log action và Index action vào alert-history. Action chạy khi trạng thái chuyển sang nhóm cảnh báo, tránh ghi lặp lại mỗi lần lịch chạy nếu cùng trạng thái còn active.
 
 ## 5. Kết quả thực nghiệm
 
@@ -125,9 +125,22 @@ Không cần xóa volume hoặc checkpoint đang dùng để demo. Nếu muốn 
 
 ## 8. Tài liệu tham khảo
 
-- Apache Spark 3.5.8, Structured Streaming Programming Guide: https://spark.apache.org/docs/3.5.8/structured-streaming-programming-guide.html
-- Apache Hadoop 3.2.1, HDFS Architecture: https://hadoop.apache.org/docs/r3.2.1/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html
-- Elastic 8.19, Elasticsearch query rule: https://www.elastic.co/guide/en/kibana/8.19/rule-type-es-query.html
-- Elastic, Set up Kibana alerting: https://www.elastic.co/docs/explore-analyze/alerting/alerts/alerting-setup
-- Elastic, Kibana Lens: https://www.elastic.co/guide/en/kibana/8.19/lens.html
-- Kế hoạch môn học trong doc/Ke hoach Do an mon hoc Nhap mon Big data_SV.docx; source và các phase trong repository của nhóm.
+Tiếng Anh
+
+1. Apache Software Foundation, Hadoop 3.2.1 Documentation: HDFS Architecture, https://hadoop.apache.org/docs/r3.2.1/hadoop-project-dist/hadoop-hdfs/HdfsDesign.html, truy cập ngày 29/10/2026.
+2. Apache Software Foundation, Apache Parquet Documentation: Overview, https://parquet.apache.org/docs/overview/, truy cập ngày 29/10/2026.
+3. Apache Software Foundation, Spark 3.5.8 Documentation: Structured Streaming Programming Guide, https://spark.apache.org/docs/3.5.8/structured-streaming-programming-guide.html, truy cập ngày 29/10/2026.
+4. Armbrust M., Das T., Torres J., Yavuz B., Zhu S., Xin R., Ghodsi A., Stoica I., Zaharia M. (2018), "Structured Streaming: A declarative API for real-time applications in Apache Spark", Proceedings of the 2018 International Conference on Management of Data (SIGMOD '18), pp. 601-613. DOI: 10.1145/3183713.3190664.
+5. Databricks, What is a medallion architecture?, https://www.databricks.com/glossary/medallion-architecture, truy cập ngày 29/10/2026.
+6. Elastic, Elasticsearch Guide 8.19: Index API, https://www.elastic.co/guide/en/elasticsearch/reference/8.19/docs-index_.html, truy cập ngày 29/10/2026.
+7. Elastic, Elasticsearch Guide 8.19: Keyword type family, https://www.elastic.co/guide/en/elasticsearch/reference/8.19/keyword.html, truy cập ngày 29/10/2026.
+8. Elastic, Elasticsearch Guide 8.19: Mapping, https://www.elastic.co/guide/en/elasticsearch/reference/8.19/mapping.html, truy cập ngày 29/10/2026.
+9. Elastic, Elasticsearch for Apache Hadoop 8.19: Apache Spark support, https://www.elastic.co/guide/en/elasticsearch/hadoop/8.19/spark.html, truy cập ngày 29/10/2026.
+10. Elastic, Kibana Guide 8.19: Create a data view, https://www.elastic.co/guide/en/kibana/8.19/data-views.html, truy cập ngày 29/10/2026.
+11. Elastic, Kibana Guide 8.19: Create an Elasticsearch query rule, https://www.elastic.co/guide/en/kibana/8.19/rule-type-es-query.html, truy cập ngày 29/10/2026.
+12. Elastic, Kibana Guide 8.19: Create visualizations with Lens, https://www.elastic.co/guide/en/kibana/8.19/lens.html, truy cập ngày 29/10/2026.
+13. Elastic, Elastic Docs: Set up Kibana alerting, https://www.elastic.co/docs/explore-analyze/alerting/alerts/alerting-setup, truy cập ngày 29/10/2026.
+14. OWASP Foundation, Brute Force Attack, https://owasp.org/www-community/attacks/Brute_force_attack, truy cập ngày 29/10/2026.
+15. OWASP Foundation, Denial of Service, https://owasp.org/www-community/attacks/Denial_of_Service, truy cập ngày 29/10/2026.
+16. OWASP Foundation, Forced Browsing, https://owasp.org/www-community/attacks/Forced_browsing, truy cập ngày 29/10/2026.
+17. Shvachko K., Kuang H., Radia S., Chansler R. (2010), "The Hadoop Distributed File System", 2010 IEEE 26th Symposium on Mass Storage Systems and Technologies (MSST), pp. 1-10. DOI: 10.1109/MSST.2010.5496972.
