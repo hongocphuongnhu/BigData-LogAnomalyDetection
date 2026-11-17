@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kết quả Batch</title>
+<style>
+:root { --surface:#fcfcfb; --page:#f9f9f7; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+  --grid:#e1e0d9; --accent:#2a78d6; --accent-wash:#e8f1fc; --border:rgba(11,11,11,.10); }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--page); color:var(--ink); font:15px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+header { background:var(--surface); border-bottom:1px solid var(--border); padding:28px 16px 20px; }
+.wrap { max-width:1180px; margin:0 auto; padding:0 16px; }
+h1 { font-size:26px; margin:0 0 4px; } h2 { font-size:20px; margin:40px 0 8px; } h3 { font-size:16px; margin:24px 0 8px; color:var(--ink2); }
+.sub { color:var(--ink2); margin:0; }
+nav { display:flex; gap:16px; flex-wrap:wrap; margin-top:14px; font-size:14px; }
+nav a { color:var(--accent); text-decoration:none; }
+.tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin:24px 0 8px; }
+.tile { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:14px 16px; }
+.tl { color:var(--ink2); font-size:13px; } .tv { font-size:26px; font-weight:600; margin:2px 0; } .tn { color:var(--muted); font-size:13px; }
+.lead { color:var(--ink2); max-width:860px; }
+.tbl { overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:10px; }
+table { border-collapse:collapse; width:100%; font-size:14px; }
+th, td { padding:8px 12px; border-bottom:1px solid var(--grid); text-align:left; white-space:nowrap; }
+th { color:var(--ink2); font-weight:600; background:var(--page); }
+td { font-variant-numeric:tabular-nums; } tr:last-child td { border-bottom:0; }
+tr.hl td { background:var(--accent-wash); }
+.tag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:999px; background:var(--accent); color:#fff; margin-left:6px; vertical-align:1px; }
+.sev { font-size:12px; padding:1px 8px; border-radius:999px; border:1px solid var(--border); }
+.sev.high { background:#fbe4e4; } .sev.medium { background:#fdf0dc; } .sev.low { background:#eef2f6; }
+.grid2 { display:grid; grid-template-columns:repeat(auto-fit,minmax(460px,1fr)); gap:16px; }
+figure { margin:16px 0 0; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:12px; }
+figure img { width:100%; height:auto; display:block; }
+.narrow { max-width:760px; }
+figcaption { color:var(--muted); font-size:13px; margin-top:6px; }
+.note { background:var(--surface); border-left:3px solid var(--accent); padding:10px 14px; color:var(--ink2); border-radius:0 8px 8px 0; }
+code { background:var(--page); border:1px solid var(--grid); border-radius:4px; padding:0 4px; font-size:13px; }
+footer { color:var(--muted); font-size:13px; padding:40px 0 32px; }
+@media (max-width:520px) { .grid2 { grid-template-columns:1fr; } h1 { font-size:22px; } }
+</style></head>
+<body>
+<header><div class="wrap">
+  <h1>Phát hiện bất thường trong log HTTP — kết quả Batch</h1>
+  <p class="sub">Spark (cluster standalone) · NASA HTTP 07/1995 + simulator có nhãn · KMeans + CBLOF · phần của Định</p>
+  <nav><a href="#data">1. Dữ liệu</a><a href="#eda">2. EDA</a><a href="#model">3. Mô hình</a><a href="#nasa">4. NASA</a></nav>
+</div></header>
+<main class="wrap">
+  <div class="tiles"><div class="tile"><div class="tl">Log NASA thật đã làm sạch</div><div class="tv">1.891.709</div><div class="tn">loại 6 dòng lỗi</div></div><div class="tile"><div class="tl">Model streaming</div><div class="tv">KMeans + CBLOF</div><div class="tn">k = 2, ngưỡng p99 = 7.49</div></div><div class="tile"><div class="tl">F1 (tập test sim)</div><div class="tv">0,836</div><div class="tn">Rule: 0,538</div></div><div class="tile"><div class="tl">Recall DDoS</div><div class="tv">1,00</div><div class="tn">Rule: 0,34</div></div></div>
+
+<section id="data">
+  <h2>1. Dữ liệu & làm sạch (NASA thật)</h2>
+  <p class="lead">File gốc Apache Common Log Format (gzip), parse bằng Spark trên cluster, ghi Parquet phân vùng
+  <code>dt/hour</code>. Simulator sinh thêm 1.065.283 dòng có nhãn (4 loại tấn công) để đánh giá định lượng.</p>
+  <div class="tbl"><table><thead><tr><th>Chỉ số</th><th>Giá trị</th></tr></thead><tbody><tr><td>Tổng số dòng đọc</td><td>1.891.715</td></tr><tr><td>Vào silver</td><td>1.891.709</td></tr><tr><td>Loại: dòng bị cắt cụt (malformed_line)</td><td>1</td></tr><tr><td>Loại: request rác (malformed_request)</td><td>5</td></tr><tr><td>Dòng trùng tuyệt đối (giữ lại)</td><td>835</td></tr><tr><td>Thiếu bytes (“-”) → 0</td><td>19.721</td></tr><tr><td>Request HTTP/0.9 (không có protocol)</td><td>3.732</td></tr><tr><td>Request không nhất quán (path có dấu cách / rác)</td><td>974</td></tr><tr><td>Số host khác nhau (xấp xỉ)</td><td>79.433</td></tr><tr><td>Khoảng thời gian (UTC)</td><td>1995-07-01T04:00:01 → 1995-07-28T17:32:25</td></tr></tbody></table></div>
+</section>
+
+<section id="eda">
+  <h2>2. Khám phá dữ liệu</h2>
+  <figure><img src="figures/nasa_requests_per_hour.png" alt="Request mỗi giờ theo nhóm status — đỉnh 13/07 ngày phóng tàu STS-70; đỉnh 5xx 03/07"><figcaption>Request mỗi giờ theo nhóm status — đỉnh 13/07 ngày phóng tàu STS-70; đỉnh 5xx 03/07</figcaption></figure>
+  <div class="grid2">
+    <figure><img src="figures/nasa_status_distribution.png" alt="Phân bố status code"><figcaption>Phân bố status code</figcaption></figure>
+    <figure><img src="figures/nasa_requests_per_host.png" alt="Số request mỗi host — đuôi rất dài"><figcaption>Số request mỗi host — đuôi rất dài</figcaption></figure>
+    <figure><img src="figures/nasa_top_hosts.png" alt="Top 20 host"><figcaption>Top 20 host</figcaption></figure>
+    <figure><img src="figures/nasa_top_404_paths.png" alt="Top 15 path trả về 404"><figcaption>Top 15 path trả về 404</figcaption></figure>
+  </div>
+  <div class="narrow"><figure><img src="figures/nasa_bytes_histogram.png" alt="Phân bố kích thước response"><figcaption>Phân bố kích thước response</figcaption></figure></div>
+</section>
+
+<section id="model">
+  <h2>3. Mô hình: KMeans + CBLOF</h2>
+  <p class="lead">Feature theo cửa sổ <b>IP × 5 phút</b>. KMeans gom các cửa sổ thành nhóm hành vi. <b>CBLOF</b> chấm
+  điểm: cửa sổ thuộc cụm nhỏ được đo khoảng cách tới <b>tâm cụm lớn (bình thường) gần nhất</b>. Ngưỡng = phân vị 99
+  điểm trên tập train, không dùng nhãn. Đánh giá trên 30% thời gian cuối (tập test).</p>
+  <div class="note">Vì sao CBLOF: tấn công tự gom thành một cụm nhỏ riêng, nên “khoảng cách tới tâm cụm được gán”
+  chấm điểm chúng thấp (F1 0,216, bỏ sót DDoS).
+  CBLOF đo tới cụm bình thường, nên bắt được (F1 0,836).</div>
+  <h3>Bảng so sánh (tập test simulator)</h3>
+  <div class="tbl"><table><thead><tr><th>Phương pháp</th><th>k</th><th>Precision</th><th>Recall</th><th>F1</th><th>PR-AUC</th><th>FPR</th><th>Recall brute_force</th><th>Recall sqli</th><th>Recall scan</th><th>Recall ddos</th></tr></thead><tbody><tr><td>Rule (ngưỡng viết tay)</td><td>–</td><td>1,000</td><td>0,368</td><td><b>0,538</b></td><td>–</td><td>0,0000</td><td>0,90</td><td>1,00</td><td>1,00</td><td>0,34</td></tr><tr class=hl><td>KMeans + CBLOF · core <span class=tag>model demo</span></td><td>2</td><td>0,720</td><td>0,998</td><td><b>0,836</b></td><td>0,998</td><td>0,0031</td><td>1,00</td><td>0,90</td><td>1,00</td><td>1,00</td></tr><tr><td>KMeans (tâm cụm được gán) · core</td><td>2</td><td>0,221</td><td>0,211</td><td><b>0,216</b></td><td>0,157</td><td>0,0060</td><td>1,00</td><td>0,90</td><td>1,00</td><td>0,17</td></tr><tr><td>BisectingKMeans + CBLOF · core</td><td>2</td><td>0,752</td><td>0,998</td><td><b>0,858</b></td><td>0,998</td><td>0,0027</td><td>1,00</td><td>0,90</td><td>1,00</td><td>1,00</td></tr><tr><td>KMeans + CBLOF · extended</td><td>2</td><td>0,751</td><td>0,998</td><td><b>0,857</b></td><td>0,998</td><td>0,0027</td><td>1,00</td><td>0,90</td><td>1,00</td><td>1,00</td></tr><tr><td>BisectingKMeans + CBLOF · extended</td><td>2</td><td>0,736</td><td>0,998</td><td><b>0,848</b></td><td>0,998</td><td>0,0029</td><td>1,00</td><td>0,90</td><td>1,00</td><td>1,00</td></tr></tbody></table></div>
+  <div class="grid2">
+    <figure><img src="figures/model_comparison.png" alt="So sánh phương pháp"><figcaption>So sánh phương pháp</figcaption></figure>
+    <figure><img src="figures/model_recall_by_attack.png" alt="Recall theo loại tấn công"><figcaption>Recall theo loại tấn công</figcaption></figure>
+    <figure><img src="figures/model_score_distribution.png" alt="Điểm bất thường theo nhãn thật và ngưỡng"><figcaption>Điểm bất thường theo nhãn thật và ngưỡng</figcaption></figure>
+    <figure><img src="figures/model_pr_curve.png" alt="Đường Precision–Recall"><figcaption>Đường Precision–Recall</figcaption></figure>
+    <figure><img src="figures/model_pca_clusters.png" alt="Các cụm KMeans (PCA 2D)"><figcaption>Các cụm KMeans (PCA 2D)</figcaption></figure>
+    <figure><img src="figures/model_silhouette_by_k.png" alt="Chọn k theo silhouette"><figcaption>Chọn k theo silhouette</figcaption></figure>
+  </div>
+  <figure><img src="figures/model_pca_attacks.png" alt="Vị trí từng loại tấn công so với traffic bình thường"><figcaption>Vị trí từng loại tấn công so với traffic bình thường</figcaption></figure>
+  <h3>Các cụm hành vi trên simulator</h3>
+  <div class="tbl"><table><thead><tr><th>Cụm</th><th>Số cửa sổ</th><th>TB request</th><th>burst_rate</th><th>Số path</th><th>Tỉ lệ 4xx</th><th>Tỉ lệ 404</th><th>Tỉ lệ file tĩnh</th><th>Tỉ lệ tấn công (nhãn thật)</th></tr></thead><tbody><tr><td>0</td><td>173.049</td><td>5,4</td><td>0,44</td><td>5,0</td><td>0,06</td><td>0,06</td><td>0,10</td><td>0,00</td></tr><tr><td>1</td><td>1.363</td><td>21,2</td><td>2,31</td><td>19,5</td><td>0,28</td><td>0,02</td><td>0,00</td><td>1,00</td></tr></tbody></table></div>
+</section>
+
+<section id="nasa">
+  <h2>4. Áp dụng lên NASA thật</h2>
+  <p class="lead">Không có nhãn, nên đánh giá định tính. KMeans chọn k = 3;
+  có 2.487 cửa sổ vượt ngưỡng. Cảnh báo số 1 (host <code>163.205.1.45</code>, 03/07) trùng
+  với đỉnh lỗi 5xx trên biểu đồ EDA.</p>
+  <h3>Các cụm hành vi</h3>
+  <div class="tbl"><table><thead><tr><th>Cụm</th><th>Số cửa sổ</th><th>TB request</th><th>burst_rate</th><th>Số path</th><th>Tỉ lệ 4xx</th><th>Tỉ lệ 404</th><th>Tỉ lệ file tĩnh</th></tr></thead><tbody><tr><td>0</td><td>199.002</td><td>7,6</td><td>0,12</td><td>7,1</td><td>0,00</td><td>0,00</td><td>0,56</td></tr><tr><td>1</td><td>1.215</td><td>6,8</td><td>0,10</td><td>5,5</td><td>0,53</td><td>0,53</td><td>0,33</td></tr><tr><td>2</td><td>39.667</td><td>5,2</td><td>1,06</td><td>5,1</td><td>0,00</td><td>0,00</td><td>0,79</td></tr></tbody></table></div>
+  <h3>20 cửa sổ bất thường nhất</h3>
+  <div class="tbl"><table><thead><tr><th>Host</th><th>Cửa sổ (UTC)</th><th>Request</th><th>Điểm</th><th>Mức</th><th>Lý do (feature lệch nhất)</th><th>Rule</th></tr></thead><tbody><tr><td>163.205.1.45</td><td>1995-07-03 14:50</td><td>35</td><td>320,7</td><td><span class="sev high">high</span></td><td>ratio_5xx</td><td>–</td></tr><tr><td>piweba4y.prodigy.com</td><td>1995-07-28 01:35</td><td>4</td><td>293,5</td><td><span class="sev high">high</span></td><td>ratio_sus_path</td><td>suspicious_path</td></tr><tr><td>sun1.who.ch</td><td>1995-07-23 22:15</td><td>3</td><td>259,3</td><td><span class="sev high">high</span></td><td>ratio_sus_path</td><td>suspicious_path</td></tr><tr><td>163.205.1.45</td><td>1995-07-03 14:55</td><td>32</td><td>257,8</td><td><span class="sev high">high</span></td><td>ratio_5xx</td><td>–</td></tr><tr><td>192.83.171.94</td><td>1995-07-18 01:45</td><td>3</td><td>226,6</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>dffl6-32.gate.net</td><td>1995-07-24 21:05</td><td>3</td><td>186,3</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>163.205.1.45</td><td>1995-07-03 14:40</td><td>8</td><td>174,7</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>asimov</td><td>1995-07-25 15:40</td><td>4</td><td>139,8</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>138.13.123.172</td><td>1995-07-06 22:10</td><td>3</td><td>130,1</td><td><span class="sev high">high</span></td><td>ratio_sus_path</td><td>suspicious_path</td></tr><tr><td>198.122.135.40</td><td>1995-07-25 21:55</td><td>3</td><td>129,7</td><td><span class="sev high">high</span></td><td>ratio_sus_path</td><td>suspicious_path</td></tr><tr><td>firnvx.firn.edu</td><td>1995-07-22 04:15</td><td>3</td><td>129,7</td><td><span class="sev high">high</span></td><td>ratio_sus_path</td><td>suspicious_path</td></tr><tr><td>titan02</td><td>1995-07-18 20:05</td><td>3</td><td>129,1</td><td><span class="sev high">high</span></td><td>ratio_5xx</td><td>–</td></tr><tr><td>163.205.1.45</td><td>1995-07-03 14:45</td><td>18</td><td>126,4</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>134.57.9.77</td><td>1995-07-24 21:55</td><td>4</td><td>119,3</td><td><span class="sev high">high</span></td><td>ratio_5xx</td><td>–</td></tr><tr><td>firnvx.firn.edu</td><td>1995-07-22 04:35</td><td>4</td><td>97,3</td><td><span class="sev high">high</span></td><td>ratio_sus_path</td><td>–</td></tr><tr><td>abcworks.demon.co.uk</td><td>1995-07-07 14:20</td><td>4</td><td>97,2</td><td><span class="sev high">high</span></td><td>ratio_sus_path</td><td>–</td></tr><tr><td>line159.nwm.mindlink.net</td><td>1995-07-12 05:25</td><td>3</td><td>95,5</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>149.25.97.54</td><td>1995-07-11 23:35</td><td>3</td><td>93,8</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>147.150.105.17</td><td>1995-07-14 13:45</td><td>6</td><td>93,7</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr><tr><td>192.112.239.115</td><td>1995-07-27 14:45</td><td>6</td><td>93,2</td><td><span class="sev high">high</span></td><td>ratio_post</td><td>–</td></tr></tbody></table></div>
+  <figure><img src="figures/nasa_top_anomalies.png" alt="Top 20 cửa sổ bất thường NASA và feature lệch nhất"><figcaption>Top 20 cửa sổ bất thường NASA và feature lệch nhất</figcaption></figure>
+</section>
+<footer>Sinh tự động bởi <code>analysis/build_results_page.py</code> từ <code>data/reports/*.json</code>.
+Model: <code>/opt/spark/data/gold/models/kmeans_core</code> · huấn luyện lúc 2026-10-13T10:25:05+00:00.</footer>
+</main></body></html>
