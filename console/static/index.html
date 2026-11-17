@@ -3,43 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Trung tâm giám sát — Báo điện tử</title>
+  <title>LogSentinel — Trung tâm giám sát</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
+  <aside class="sidebar" aria-label="Điều hướng chính">
+    <a class="brand" href="#main-content"><span>LogSentinel<small>LOG ANOMALY DETECTION</small></span></a>
+    <p class="nav-label">KHÔNG GIAN LÀM VIỆC</p>
+    <nav class="sections" aria-label="Các mục">
+      <a href="#ha-tang" aria-current="location">Tổng quan hạ tầng</a>
+      <a href="#mo-phong">Mô phỏng tấn công</a>
+      <a href="#canh-bao">Cảnh báo</a>
+      <a href="#kiem-tra">Kiểm tra tự động</a>
+      <a href="#dashboard">Dashboard Kibana</a>
+    </nav>
+    <div class="sidebar-guide"><span class="guide-label">BẮT ĐẦU PHIÊN DEMO</span><h2>Từ log đến cảnh báo.</h2><p>Bật bộ phát hiện, chọn kịch bản và theo dõi hành vi bất thường.</p><a href="#mo-phong">Mở mô phỏng </a></div>
+    <div class="sidebar-footer"><div>Đồ án Big Data<small>Spark, HDFS, Elasticsearch</small></div></div>
+  </aside>
   <header class="masthead">
     <div class="masthead-row">
       <div>
-        <p class="kicker">Đồ án Big Data · Phát hiện bất thường trong nhật ký truy cập</p>
+        <p class="kicker">KHÔNG GIAN VẬN HÀNH  TỔNG QUAN HỆ THỐNG</p>
         <h1>Trung tâm giám sát</h1>
-        <p class="standfirst">Một trang báo điện tử đang bị tấn công. Hệ thống đọc nhật ký truy cập bằng Spark,
-          lưu trên HDFS và Elasticsearch, dùng KMeans để nhận ra hành vi lạ và phát cảnh báo.</p>
+        <p class="standfirst">Theo dõi hạ tầng, khám phá hành vi bất thường và kiểm chứng khả năng phát hiện tấn công.</p>
       </div>
       <div class="masthead-tools">
         <p class="updated" id="updated" aria-live="polite">Đang kiểm tra hệ thống…</p>
         <button type="button" class="btn-ghost" id="theme-toggle" aria-label="Đổi giao diện sáng tối">Giao diện: tự động</button>
       </div>
     </div>
-    <nav class="sections" aria-label="Các mục">
-      <a href="#ha-tang"><span>1</span>Hạ tầng</a>
-      <a href="#mo-phong"><span>2</span>Mô phỏng tấn công</a>
-      <a href="#canh-bao"><span>3</span>Cảnh báo</a>
-      <a href="#kiem-tra"><span>4</span>Kiểm tra tự động</a>
-      <a href="#dashboard"><span>5</span>Dashboard</a>
-    </nav>
   </header>
 
   <div class="banner" id="server-banner" role="alert" hidden>
     Mất kết nối tới server trung tâm. Kiểm tra cửa sổ đang chạy <code>python -m console.server</code>.
   </div>
 
-  <main>
+  <main id="main-content" tabindex="-1">
+    <div class="overview-grid" aria-label="Tổng quan hệ thống">
+      <article class="overview-card"><p>Dịch vụ kết nối </p><strong id="summary-services">—<small>/ 4</small></strong><span>Spark, HDFS, Elasticsearch, Kibana</span></article>
+      <article class="overview-card"><p>Bản ghi đã lập chỉ mục </p><strong id="summary-docs">—</strong><span>Tổng dữ liệu từ Elasticsearch</span></article>
+      <article class="overview-card"><p>Tài nguyên tính toán </p><strong id="summary-cores">—</strong><span>Lõi CPU đang sử dụng / tổng số</span></article>
+      <article class="overview-card"><p>Dữ liệu lưu trữ </p><strong id="summary-storage">—</strong><span>Dung lượng đã sử dụng trên HDFS</span></article>
+    </div>
+    <div class="pipeline-strip"><span class="pipeline-label">LUỒNG XỬ LÝ</span><span>HTTP logs</span><span>HDFS</span><span>Spark &amp; KMeans</span><span>Elasticsearch</span><span>Cảnh báo</span></div>
     <section id="ha-tang" class="section" aria-labelledby="ha-tang-title">
       <header class="section-head">
-        <span class="section-no">1</span>
         <div>
-          <h2 id="ha-tang-title">Hạ tầng đang chạy thật</h2>
-          <p>Năm dịch vụ trong Docker. Số liệu đọc trực tiếp từ API của từng dịch vụ, tự làm mới mỗi 5 giây.</p>
+          <h2 id="ha-tang-title">Tổng quan hạ tầng</h2>
+          <p>Trạng thái dịch vụ và tác vụ trong Docker. Số liệu đọc trực tiếp từ API, tự làm mới mỗi 5 giây.</p>
         </div>
       </header>
       <div class="cards" id="infra-cards">
@@ -57,7 +69,7 @@
         </article>
         <article class="card" data-service="hdfs">
           <header><h3>Kho dữ liệu HDFS</h3><span class="status status-pending">Đang kiểm tra…</span></header>
-          <p class="role">Hồ dữ liệu phân tán, chia tầng thô → sạch → đặc trưng.</p>
+          <p class="role">Hồ dữ liệu phân tán, chia tầng thô, sạch, đặc trưng.</p>
           <div class="metrics"></div>
           <footer></footer>
         </article>
@@ -78,7 +90,6 @@
 
     <section id="mo-phong" class="section" aria-labelledby="mo-phong-title">
       <header class="section-head">
-        <span class="section-no">2</span>
         <div>
           <h2 id="mo-phong-title">Mô phỏng tấn công</h2>
           <p>Bật bộ phát hiện, chọn một kịch bản tấn công vào trang báo rồi bấm Chạy.
@@ -111,7 +122,6 @@
 
     <section id="canh-bao" class="section" aria-labelledby="canh-bao-title">
       <header class="section-head">
-        <span class="section-no">3</span>
         <div>
           <h2 id="canh-bao-title">Cảnh báo</h2>
           <p>Mỗi cảnh báo là một địa chỉ IP trong một khung 5 phút có hành vi lệch xa người đọc bình thường.
@@ -153,10 +163,9 @@
 
     <section id="kiem-tra" class="section" aria-labelledby="kiem-tra-title">
       <header class="section-head">
-        <span class="section-no">4</span>
         <div>
           <h2 id="kiem-tra-title">Kiểm tra tự động</h2>
-          <p>Chạy bài kiểm tra đầu-cuối: tấn công → phát hiện → cảnh báo trong Kibana → khởi động lại không ghi trùng,
+          <p>Chạy bài kiểm tra đầu-cuối: tấn công, phát hiện, cảnh báo trong Kibana, khởi động lại không ghi trùng,
             rồi báo Đạt hoặc Không đạt. Mỗi lượt mất khoảng 4–5 phút.</p>
         </div>
       </header>
@@ -182,7 +191,6 @@
 
     <section id="dashboard" class="section" aria-labelledby="dashboard-title">
       <header class="section-head">
-        <span class="section-no">5</span>
         <div>
           <h2 id="dashboard-title">Dashboard Kibana</h2>
           <p>Biểu đồ thống kê lỗi và cảnh báo, nhúng thẳng vào trang. Tự làm mới mỗi 10 giây.</p>
@@ -192,12 +200,13 @@
         <button type="button" role="tab" data-dashboard="nhu-anomaly-alerts" aria-selected="true">Bất thường &amp; cảnh báo</button>
         <button type="button" role="tab" data-dashboard="nhu-log-overview" aria-selected="false">Tổng quan log</button>
       </div>
-      <p class="tab-note"><a class="open-link" id="dashboard-open" href="#" target="_blank" rel="noopener">Mở trong Kibana ↗</a></p>
+      <p class="tab-note"><a class="open-link" id="dashboard-open" href="#" target="_blank" rel="noopener">Mở trong Kibana</a></p>
       <div class="dashboard-frame" id="dashboard-frame">
         <p class="alerts-empty">Đang kiểm tra Kibana…</p>
       </div>
     </section>
   </main>
+  <footer class="page-footer"><span>LogSentinel, Trung tâm giám sát nhật ký</span><span>Đồ án Nhập môn Big Data</span></footer>
 
   <noscript><p class="banner">Trang cần JavaScript để đọc số liệu trực tiếp.</p></noscript>
   <script src="/app.js"></script>

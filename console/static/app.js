@@ -55,7 +55,7 @@ function metric(value, label) {
 }
 
 function link(href, text = "Mở giao diện gốc") {
-  return el("a", { class: "open-link", href, target: "_blank", rel: "noopener" }, `${text} ↗`);
+  return el("a", { class: "open-link", href, target: "_blank", rel: "noopener" }, text);
 }
 
 function setCard(service, state, statusText, body, footer) {
@@ -89,11 +89,11 @@ function renderSparkTask(spark, sparkApp, links) {
   }
   if (!spark.apps.length) {
     return setCard("spark_task", "idle", "Chưa có tác vụ", [
-      el("p", { class: "empty" }, "Cụm đang rảnh. Bộ phát hiện sẽ được bật ở mục 2."),
+      el("p", { class: "empty" }, "Cụm đang rảnh. Bộ phát hiện sẽ được bật trong phần Mô phỏng tấn công."),
     ]);
   }
   const items = spark.apps.map((app) => el("li", {},
-    el("span", {}, APP_NAMES[app.name] || app.name, el("br"), el("span", { class: "sub" }, `${app.name} · chạy ${durationVi(app.duration_s)}`)),
+    el("span", {}, APP_NAMES[app.name] || app.name, el("br"), el("span", { class: "sub" }, `${app.name}, chạy ${durationVi(app.duration_s)}`)),
     el("span", { class: "num" }, `${app.cores} lõi`)));
   const waiting = spark.apps.some((app) => app.state !== "RUNNING" || app.cores === 0);
   setCard("spark_task", waiting ? "pending" : "ok", waiting ? "Đang chờ lõi CPU" : `${spark.apps.length} tác vụ đang chạy`,
@@ -105,7 +105,7 @@ function renderHdfs(hdfs, links) {
   const tiers = Object.entries(TIERS).map(([key, label]) => {
     const tier = hdfs.lake[key];
     return el("li", {}, el("span", {}, label), tier
-      ? el("span", { class: "num" }, `${bytesVi(tier.bytes)} · ${numberVi.format(tier.files)} file`)
+      ? el("span", { class: "num" }, `${bytesVi(tier.bytes)}, ${numberVi.format(tier.files)} file`)
       : el("span", { class: "sub" }, "chưa có"));
   });
   setCard("hdfs", hdfs.live_nodes > 0 ? "ok" : "down", hdfs.live_nodes > 0 ? "Đang chạy" : "Không có DataNode", [
@@ -153,10 +153,28 @@ async function refresh() {
     renderEs(data.es, data.links);
     renderKibana(data.kibana, data.links);
     updateDashboard(data.kibana, data.links);
+    renderOverview(data);
     document.getElementById("updated").textContent = `Cập nhật lúc ${timeVi.format(new Date())}`;
   } catch (error) {
     banner.hidden = false;
+    clearOverview();
     document.getElementById("updated").textContent = "Không cập nhật được";
+  }
+}
+
+function renderOverview(data) {
+  const connected = [data.spark, data.hdfs, data.es, data.kibana].filter((service) => service.ok).length;
+  document.getElementById("summary-services").replaceChildren(String(connected), el("small", {}, "/ 4"));
+  document.getElementById("summary-docs").textContent = data.es.ok
+    ? numberVi.format(Object.values(data.es.indices).reduce((total, index) => total + index.docs, 0)) : "—";
+  document.getElementById("summary-cores").textContent = data.spark.ok
+    ? `${data.spark.cores_used} / ${data.spark.cores}` : "—";
+  document.getElementById("summary-storage").textContent = data.hdfs.ok ? bytesVi(data.hdfs.capacity_used) : "—";
+}
+
+function clearOverview() {
+  for (const id of ["summary-services", "summary-docs", "summary-cores", "summary-storage"]) {
+    document.getElementById(id).textContent = "—";
   }
 }
 
@@ -164,12 +182,12 @@ async function refresh() {
 const ALERT_POLL_MS = 3000;
 const dateTimeVi = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" });
 const SOURCE_NOTES = {
-  stream: "Cảnh báo do bộ phát hiện thời gian thực sinh ra, mới nhất ở trên. Chạy một kịch bản ở mục 2 để thấy cảnh báo mới xuất hiện.",
+  stream: "Cảnh báo do bộ phát hiện thời gian thực sinh ra, mới nhất ở trên. Chạy một kịch bản trong phần Mô phỏng tấn công để thấy cảnh báo mới xuất hiện.",
   sim: "Kết quả chấm điểm một ngày log mô phỏng của trang báo, xếp theo điểm, nặng nhất ở trên.",
   nasa: "Log thật của máy chủ NASA tháng 7/1995, không có nhãn. Đây là những cửa sổ lạ nhất mà model tìm ra.",
 };
 const EMPTY_NOTES = {
-  stream: "Chưa có cảnh báo thời gian thực nào. Bật bộ phát hiện và chạy một kịch bản ở mục 2.",
+  stream: "Chưa có cảnh báo thời gian thực nào. Bật bộ phát hiện và chạy một kịch bản trong phần Mô phỏng tấn công.",
   sim: "Chưa có cảnh báo của lô mô phỏng. Chạy scripts/run_all.py --batch --serve để nạp.",
   nasa: "Chưa có cảnh báo NASA. Chạy scripts/run_all.py --batch --serve để nạp.",
 };
@@ -212,7 +230,7 @@ function alertItem(alert, isNew) {
     el("div", { class: "alert-main" },
       el("p", { class: "headline" }, alert.headline),
       alert.context.length ? el("ul", { class: "context" }, ...alert.context.map((line) => el("li", {}, line))) : null,
-      alert.score_vi ? el("div", { class: "scoreline" }, bar, el("span", { class: "score-text" }, `${alert.score_vi} · ${alert.ratio_vi}`)) : null,
+      alert.score_vi ? el("div", { class: "scoreline" }, bar, el("span", { class: "score-text" }, `${alert.score_vi}, ${alert.ratio_vi}`)) : null,
       alert.ground_truth_vi ? el("p", { class: "truth" }, "Nhãn mô phỏng: ", el("b", {}, alert.ground_truth_vi),
         el("span", {}, " — chỉ để đối chiếu, model không dùng nhãn này")) : null));
 }
@@ -333,13 +351,13 @@ function renderLiveState(data) {
   start.disabled = data.job !== null;
   stop.disabled = Boolean(live && live.phase === "stopping");
   if (data.job === "check") {
-    state.replaceChildren(statusPill("pending", "Tạm khóa"), "Đang chạy kiểm tra tự động ở mục 4.");
+    state.replaceChildren(statusPill("pending", "Tạm khóa"), "Đang chạy kiểm tra tự động trong phần Kiểm tra tự động.");
   } else if (!live) {
     state.replaceChildren(statusPill("idle", "Đang tắt"), "Bấm Bật, sau khoảng 35 giây sẽ sẵn sàng.");
   } else if (live.phase === "starting") {
     state.replaceChildren(statusPill("pending", "Đang khởi động"), `Đã chờ ${live.elapsed_s} giây (thường mất khoảng 35 giây).`);
   } else if (live.phase === "ready") {
-    state.replaceChildren(statusPill("ok", "Sẵn sàng"), `Dùng 2 lõi CPU · tự tắt sau ${minutesSeconds(live.remaining_s ?? 0)}.`);
+    state.replaceChildren(statusPill("ok", "Sẵn sàng"), `Dùng 2 lõi CPU, tự tắt sau ${minutesSeconds(live.remaining_s ?? 0)}.`);
   } else {
     state.replaceChildren(statusPill("pending", "Đang dừng"), "Đang dọn job Spark trong container…");
   }
@@ -439,7 +457,7 @@ function checkDetails(item) {
     parts.push(`${report.alert_documents_before_restart} cảnh báo trước và ${report.alert_documents_after_restart} sau khởi động lại (không ghi trùng)`);
   }
   if (report.history_after != null) parts.push(`luật Kibana ghi thêm ${report.history_after - report.history_before} lần vào lịch sử`);
-  return parts.join(" · ");
+  return parts.join(", ");
 }
 
 function renderCheck(current) {
@@ -458,7 +476,7 @@ function renderCheck(current) {
     el("h3", {}, `Kiểm tra: ${current.label}`),
     el("p", { class: "live-state" },
       current.running ? statusPill("pending", current.cleaning ? "Đang dọn" : "Đang chạy") : statusPill("idle", "Đã xong"),
-      `Đã chạy ${minutesSeconds(current.elapsed_s)}${current.running && !result ? " · ước tính 4–5 phút" : ""}`),
+      `Đã chạy ${minutesSeconds(current.elapsed_s)}${current.running && !result ? ", ước tính 4–5 phút" : ""}`),
     el("ol", { class: "stepper" }, ...steps),
   ];
   if (result) {
@@ -478,7 +496,7 @@ function renderHistory(history) {
     el("td", {}, dateTimeShort.format(new Date(item.started_at))),
     el("td", {}, item.label),
     el("td", { class: item.passed ? "pass" : "fail" }, item.passed ? "Đạt" : (item.cancelled ? "Đã hủy" : "Không đạt")),
-    el("td", {}, `${checkDetails(item)} · ${minutesSeconds(item.duration_s || 0)}`))));
+    el("td", {}, `${checkDetails(item)}, ${minutesSeconds(item.duration_s || 0)}`))));
 }
 
 async function refreshCheck() {
@@ -497,7 +515,7 @@ async function refreshCheck() {
   cancel.hidden = data.job !== "check";
   cancel.disabled = Boolean(data.current && data.current.cleaning);
   document.getElementById("check-hint").textContent = data.job === "live"
-    ? "Hãy dừng mô phỏng ở mục 2 trước: bài kiểm tra tự chạy bộ phát hiện riêng và cần cả 4 lõi CPU."
+    ? "Hãy dừng mô phỏng trong phần Mô phỏng tấn công trước: bài kiểm tra tự chạy bộ phát hiện riêng và cần cả 4 lõi CPU."
     : "";
 }
 
@@ -575,6 +593,23 @@ function initTheme() {
 }
 
 initTheme();
+
+// Keep the sidebar location in sync with the section being read.
+const sectionLinks = [...document.querySelectorAll(".sections a")];
+function setActiveSection(id) {
+  for (const item of sectionLinks) {
+    if (item.hash === `#${id}`) item.setAttribute("aria-current", "location");
+    else item.removeAttribute("aria-current");
+  }
+}
+const sectionObserver = new IntersectionObserver((entries) => {
+  const visible = entries.filter((entry) => entry.isIntersecting)
+    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+  if (visible.length) setActiveSection(visible[0].target.id);
+}, { rootMargin: "-5% 0px -55% 0px", threshold: 0 });
+document.querySelectorAll("main > .section").forEach((section) => sectionObserver.observe(section));
+sectionLinks.forEach((item) => item.addEventListener("click", () => setActiveSection(item.hash.slice(1))));
+
 refresh();
 setInterval(refresh, POLL_MS);
 selectAlertSource("stream");
