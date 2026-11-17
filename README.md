@@ -45,6 +45,35 @@ Trên Git Bash / Linux / macOS, dùng `./scripts/submit.sh` thay cho `.\scripts\
 
 Nếu cổng bị project khác chiếm, đổi `SPARK_*_PORT` trong `.env`.
 
+## Trung tâm giám sát (trang demo tiếng Việt)
+
+Một trang web tiếng Việt gom cả hệ thống, kể theo chủ đề "trang báo điện tử bị tấn công".
+Chỉ cần Python 3 (thư viện chuẩn), chạy từ gốc repo khi stack Docker đã lên và đã nạp dữ liệu (`run_all -Serve`):
+
+```powershell
+python -m console.server        # mở http://127.0.0.1:8765  (Ctrl+C để dừng)
+```
+
+| Vùng | Làm gì |
+|---|---|
+| 1. Hạ tầng | Trạng thái Spark, HDFS, Elasticsearch, Kibana đọc từ API thật, mỗi thẻ có nút mở giao diện gốc |
+| 2. Mô phỏng tấn công | Bật bộ phát hiện (Spark Streaming, 2 lõi CPU), chọn kịch bản Bình thường / Dò quét / Chèn SQL / Dò mật khẩu / DDoS rồi bấm Chạy. Trang hiện số IP bị cảnh báo và độ trễ phát hiện |
+| 3. Cảnh báo | Từng cảnh báo được giải thích bằng câu tiếng Việt, so với mức bình thường; lọc theo nguồn (thời gian thực / lô mô phỏng / NASA) và nhãn mô phỏng |
+| 4. Kiểm tra tự động | Chạy `scripts/verify_realtime.py` và báo **Đạt / Không đạt** kèm độ trễ, số cảnh báo trước/sau khởi động lại, lịch sử luật Kibana (mỗi lượt 4–5 phút) |
+| 5. Dashboard | Nhúng hai dashboard Kibana, tự làm mới mỗi 10 giây |
+
+Thứ tự bấm khi demo: 1 (tất cả xanh) → 2 (Bật, chờ "Sẵn sàng" khoảng 30 giây, chạy DDoS) → 3 (cảnh báo mới
+hiện ở tab Thời gian thực) → 5 → **Dừng** ở mục 2. Mục 4 nên chạy trước giờ trình bày và chỉ mở bảng lịch sử.
+
+Xử lý sự cố:
+
+- **Bộ phát hiện "Đang khởi động" mãi / báo cụm bận**: worker chỉ có 4 lõi. Một job Spark khác đang giữ lõi
+  (xem thẻ Tác vụ Spark). Chờ job đó xong hoặc tắt nó.
+- **Đóng cửa sổ server khi stream đang chạy**: driver Spark trong container vẫn sống. Mở lại server, nó tự dọn
+  (`pkill -f stream/console/checkpoint` trong `spark-master`). Driver cũng tự tắt sau 10 phút.
+- **Không bấm được Kiểm tra tự động**: hãy Dừng mô phỏng trước; bài kiểm tra tự chạy bộ phát hiện riêng và cần cả 4 lõi.
+- Nhật ký tiến trình nằm ở `data/stream/console/` (`stream.log`, `run-*.log`, `check-*.log`, `checks.jsonl`).
+
 ## Xử lý sự cố
 
 - **`port is already allocated`**: đổi cổng trong `.env` hoặc tắt project Docker khác đang chạy.

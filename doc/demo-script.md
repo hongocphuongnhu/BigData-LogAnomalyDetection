@@ -54,6 +54,32 @@ Chỉ rõ một IP có nhiều cửa sổ trượt. Số alert window không ph�
 Nếu đang fallback, nói rõ score là 0/1 và model chính thức chưa được dùng trong phiên đó.
 Nếu máy chậm, chuyển ngay sang video thật, giải thích đây là bản ghi từ cùng pipeline.
 
+## Phương án: demo bằng Trung tâm giám sát
+
+Thay cho hai terminal ở phút 4–7, có thể demo toàn bộ trên một trang tiếng Việt
+(`python -m console.server`, mở http://127.0.0.1:8765). Thời gian đo thật ngày 29/10.
+
+**Trước giờ bảo vệ (khoảng 10 phút):**
+- Mở trang, cả 5 thẻ Hạ tầng phải xanh.
+- Ở mục 4, chạy Kiểm tra tự động "DDoS phá cache" (khoảng 3–4 phút), rồi "Bình thường" (khoảng 4–5 phút).
+  Lúc trình bày chỉ cần mở bảng "Các lần kiểm tra gần đây".
+- Cuộn xuống mục 5 một lần và tắt hai thông báo của Kibana: bấm *Dismiss* ở banner "Help us improve",
+  và tích *Don't show again* ở hộp "Your data is not secure". Trình duyệt nhớ lựa chọn này.
+- Bấm "Bật bộ phát hiện" ở mục 2 khoảng 1 phút trước khi đến lượt demo (mất khoảng 25 giây).
+
+| Bước | Bấm gì | Nói gì | Thời gian |
+|---|---|---|---|
+| 1 | Mục 1 Hạ tầng | "Năm dịch vụ chạy thật trong Docker: Spark 1 worker 4 lõi, HDFS chia tầng bronze/silver/gold, ES, Kibana." Bấm "Xem thư mục /lake" nếu được hỏi | 30 giây |
+| 2 | Mục 2: chọn "DDoS phá cache", bấm Chạy | Đọc mô tả kịch bản. "20 giây đầu chỉ có bạn đọc bình thường, sau đó vài chục IP cùng phá cache" | 20 giây |
+| 3 | Mục 3, tab Thời gian thực | Khoảng 10–20 giây sau khi tấn công bắt đầu, cảnh báo nhấp sáng. Đọc một câu giải thích, nhấn mạnh "model chỉ biết lệch ở đâu, nhãn mô phỏng chỉ để đối chiếu" | 1 phút |
+| 4 | Quay lại mục 2 | Đọc ô "độ trễ phát hiện" và "IP tấn công bị cảnh báo x/y" | 20 giây |
+| 5 | Mục 5 Dashboard | Kibana tự làm mới, số "Cửa sổ bất thường" tăng; luật cảnh báo kích hoạt | 30 giây |
+| 6 | Mục 4: bảng lịch sử | "Bài kiểm tra tự động đã chạy trước: Đạt, có kiểm tra khởi động lại không ghi trùng" | 20 giây |
+| 7 | Mục 2: Dừng | Trả lõi CPU cho cụm | 5 giây |
+
+Nếu bộ phát hiện không lên trong 1 phút, xem thẻ "Tác vụ Spark" (có job khác giữ lõi CPU),
+hoặc chuyển sang video `doc/demo-live.webm`.
+
 ## Phút 7–8: Cả hai kết luận
 
 Như kết luận phần lưu trữ, serving và cảnh báo. Định kết luận chất lượng mô hình theo

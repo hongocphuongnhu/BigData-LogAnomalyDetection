@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LogSentinel — Trung tâm giám sát</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Chuyển đến nội dung chính</a>
+  <aside class="sidebar" aria-label="Điều hướng chính">
+    <a class="brand" href="#main-content"><span>LogSentinel<small>LOG ANOMALY DETECTION</small></span></a>
+    <p class="nav-label">KHÔNG GIAN LÀM VIỆC</p>
+    <nav class="sections" aria-label="Các mục">
+      <a href="#ha-tang" aria-current="location">Tổng quan hạ tầng</a>
+      <a href="#mo-phong">Mô phỏng tấn công</a>
+      <a href="#canh-bao">Cảnh báo</a>
+      <a href="#kiem-tra">Kiểm tra tự động</a>
+      <a href="#dashboard">Dashboard Kibana</a>
+    </nav>
+    <div class="sidebar-guide"><span class="guide-label">BẮT ĐẦU PHIÊN DEMO</span><h2>Từ log đến cảnh báo.</h2><p>Bật bộ phát hiện, chọn kịch bản và theo dõi hành vi bất thường.</p><a href="#mo-phong">Mở mô phỏng </a></div>
+    <div class="sidebar-footer"><div>Đồ án Big Data<small>Spark, HDFS, Elasticsearch</small></div></div>
+  </aside>
+  <header class="masthead">
+    <div class="masthead-row">
+      <div>
+        <p class="kicker">KHÔNG GIAN VẬN HÀNH  TỔNG QUAN HỆ THỐNG</p>
+        <h1>Trung tâm giám sát</h1>
+        <p class="standfirst">Theo dõi hạ tầng, khám phá hành vi bất thường và kiểm chứng khả năng phát hiện tấn công.</p>
+      </div>
+      <div class="masthead-tools">
+        <p class="updated" id="updated" aria-live="polite">Đang kiểm tra hệ thống…</p>
+        <button type="button" class="btn-ghost" id="theme-toggle" aria-label="Đổi giao diện sáng tối">Giao diện: tự động</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="banner" id="server-banner" role="alert" hidden>
+    Mất kết nối tới server trung tâm. Kiểm tra cửa sổ đang chạy <code>python -m console.server</code>.
+  </div>
+
+  <main id="main-content" tabindex="-1">
+    <div class="overview-grid" aria-label="Tổng quan hệ thống">
+      <article class="overview-card"><p>Dịch vụ kết nối </p><strong id="summary-services">—<small>/ 4</small></strong><span>Spark, HDFS, Elasticsearch, Kibana</span></article>
+      <article class="overview-card"><p>Bản ghi đã lập chỉ mục </p><strong id="summary-docs">—</strong><span>Tổng dữ liệu từ Elasticsearch</span></article>
+      <article class="overview-card"><p>Tài nguyên tính toán </p><strong id="summary-cores">—</strong><span>Lõi CPU đang sử dụng / tổng số</span></article>
+      <article class="overview-card"><p>Dữ liệu lưu trữ </p><strong id="summary-storage">—</strong><span>Dung lượng đã sử dụng trên HDFS</span></article>
+    </div>
+    <div class="pipeline-strip"><span class="pipeline-label">LUỒNG XỬ LÝ</span><span>HTTP logs</span><span>HDFS</span><span>Spark &amp; KMeans</span><span>Elasticsearch</span><span>Cảnh báo</span></div>
+    <section id="ha-tang" class="section" aria-labelledby="ha-tang-title">
+      <header class="section-head">
+        <div>
+          <h2 id="ha-tang-title">Tổng quan hạ tầng</h2>
+          <p>Trạng thái dịch vụ và tác vụ trong Docker. Số liệu đọc trực tiếp từ API, tự làm mới mỗi 5 giây.</p>
+        </div>
+      </header>
+      <div class="cards" id="infra-cards">
+        <article class="card" data-service="spark">
+          <header><h3>Cụm Spark</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Bộ máy tính toán phân tán: làm sạch log, tính đặc trưng, chạy KMeans.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="spark_task">
+          <header><h3>Tác vụ Spark</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Các job đang chạy trên cụm, ví dụ bộ phát hiện bất thường thời gian thực.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="hdfs">
+          <header><h3>Kho dữ liệu HDFS</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Hồ dữ liệu phân tán, chia tầng thô, sạch, đặc trưng.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="es">
+          <header><h3>Elasticsearch</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Kho tìm kiếm phục vụ dashboard: log đã làm sạch, điểm bất thường, cảnh báo.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+        <article class="card" data-service="kibana">
+          <header><h3>Kibana</h3><span class="status status-pending">Đang kiểm tra…</span></header>
+          <p class="role">Dashboard thống kê lỗi và luật cảnh báo tự động khi có cửa sổ bất thường.</p>
+          <div class="metrics"></div>
+          <footer></footer>
+        </article>
+      </div>
+    </section>
+
+    <section id="mo-phong" class="section" aria-labelledby="mo-phong-title">
+      <header class="section-head">
+        <div>
+          <h2 id="mo-phong-title">Mô phỏng tấn công</h2>
+          <p>Bật bộ phát hiện, chọn một kịch bản tấn công vào trang báo rồi bấm Chạy.
+            Mỗi kịch bản phát 90 giây log, tấn công bắt đầu ở giây thứ 20.</p>
+        </div>
+      </header>
+      <div class="steps">
+        <div class="step-box" id="live-box">
+          <h3><span class="step-no">Bước 1</span> Bộ phát hiện thời gian thực</h3>
+          <p class="role">Một job Spark Streaming đọc log mới mỗi 10 giây, tính đặc trưng theo cửa sổ 5 phút,
+            chấm điểm bằng model KMeans đã huấn luyện và ghi cảnh báo vào Elasticsearch.</p>
+          <p class="live-state" id="live-state" aria-live="polite">Đang đọc trạng thái…</p>
+          <div class="actions">
+            <button type="button" class="btn" id="live-start">Bật bộ phát hiện</button>
+            <button type="button" class="btn-ghost" id="live-stop" hidden>Dừng</button>
+          </div>
+        </div>
+        <div class="step-box" id="scenario-box">
+          <h3><span class="step-no">Bước 2</span> Chọn kịch bản</h3>
+          <div class="scenarios" id="scenario-list" role="radiogroup" aria-label="Kịch bản"></div>
+          <div class="actions">
+            <button type="button" class="btn" id="scenario-run" disabled>Chạy kịch bản</button>
+          </div>
+          <p class="hint" id="scenario-hint"></p>
+        </div>
+      </div>
+      <div class="run-panel" id="scenario-panel" hidden aria-live="polite"></div>
+      <p class="action-msg" id="live-msg" role="status"></p>
+    </section>
+
+    <section id="canh-bao" class="section" aria-labelledby="canh-bao-title">
+      <header class="section-head">
+        <div>
+          <h2 id="canh-bao-title">Cảnh báo</h2>
+          <p>Mỗi cảnh báo là một địa chỉ IP trong một khung 5 phút có hành vi lệch xa người đọc bình thường.
+            Model chỉ biết <em>lệch ở điểm nào</em>, không tự biết đó là kiểu tấn công gì.</p>
+        </div>
+      </header>
+      <div class="tabs" id="alerts-tabs" role="tablist" aria-label="Nguồn cảnh báo">
+        <button type="button" role="tab" data-source="stream" aria-selected="true">Thời gian thực <span class="count"></span></button>
+        <button type="button" role="tab" data-source="sim" aria-selected="false">Lô mô phỏng <span class="count"></span></button>
+        <button type="button" role="tab" data-source="nasa" aria-selected="false">Log NASA thật <span class="count"></span></button>
+      </div>
+      <p class="tab-note" id="alerts-note"></p>
+      <div class="chips" id="alerts-labels" aria-label="Lọc theo nhãn mô phỏng" hidden></div>
+      <ol class="alerts" id="alerts-list" aria-live="polite">
+        <li class="alerts-empty">Đang tải cảnh báo…</li>
+      </ol>
+      <details class="glossary">
+        <summary>Thuật ngữ trên trang này</summary>
+        <dl>
+          <dt>Cửa sổ 5 phút</dt>
+          <dd>Spark gom mọi request của một IP trong 5 phút thành một dòng, rồi tính 11 con số mô tả hành vi:
+            số request, tỷ lệ lỗi, số đường dẫn khác nhau…</dd>
+          <dt>Cụm (KMeans)</dt>
+          <dd>KMeans tự chia các cửa sổ thành nhóm hành vi giống nhau mà không cần ai dán nhãn trước.
+            Nhóm lớn là người đọc bình thường.</dd>
+          <dt>Điểm bất thường (CBLOF)</dt>
+          <dd>Khoảng cách từ cửa sổ tới tâm nhóm bình thường gần nhất. Càng xa, điểm càng cao.</dd>
+          <dt>Ngưỡng</dt>
+          <dd>Mức điểm mà chỉ 1% cửa sổ lúc huấn luyện vượt qua (phân vị 99). Vượt ngưỡng thì cảnh báo.
+            Gấp 1,5 lần ngưỡng là mức Trung bình, gấp 2 lần là mức Cao.</dd>
+          <dt>Lý do chính</dt>
+          <dd>Con số lệch khỏi tâm nhóm bình thường nhiều nhất, giúp giải thích vì sao cửa sổ bị chú ý.</dd>
+          <dt>Nhãn mô phỏng</dt>
+          <dd>Bộ sinh log biết chính xác dòng nào là tấn công. Nhãn này chỉ dùng để đối chiếu,
+            model không được nhìn thấy khi chấm điểm.</dd>
+        </dl>
+      </details>
+    </section>
+
+    <section id="kiem-tra" class="section" aria-labelledby="kiem-tra-title">
+      <header class="section-head">
+        <div>
+          <h2 id="kiem-tra-title">Kiểm tra tự động</h2>
+          <p>Chạy bài kiểm tra đầu-cuối: tấn công, phát hiện, cảnh báo trong Kibana, khởi động lại không ghi trùng,
+            rồi báo Đạt hoặc Không đạt. Mỗi lượt mất khoảng 4–5 phút.</p>
+        </div>
+      </header>
+      <div class="step-box">
+        <div class="check-controls">
+          <label for="check-attack">Kịch bản kiểm tra</label>
+          <select id="check-attack"></select>
+          <button type="button" class="btn" id="check-run">Chạy kiểm tra</button>
+          <button type="button" class="btn-ghost" id="check-cancel" hidden>Hủy</button>
+        </div>
+        <p class="hint" id="check-hint"></p>
+      </div>
+      <div class="run-panel" id="check-panel" hidden aria-live="polite"></div>
+      <p class="action-msg" id="check-msg" role="status"></p>
+      <h3 class="sub-head">Các lần kiểm tra gần đây</h3>
+      <div class="table-wrap">
+        <table class="history">
+          <thead><tr><th>Lúc chạy</th><th>Kịch bản</th><th>Kết quả</th><th>Chi tiết</th></tr></thead>
+          <tbody id="check-history"><tr><td colspan="4">Chưa có lượt kiểm tra nào.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="dashboard" class="section" aria-labelledby="dashboard-title">
+      <header class="section-head">
+        <div>
+          <h2 id="dashboard-title">Dashboard Kibana</h2>
+          <p>Biểu đồ thống kê lỗi và cảnh báo, nhúng thẳng vào trang. Tự làm mới mỗi 10 giây.</p>
+        </div>
+      </header>
+      <div class="tabs" role="tablist" aria-label="Dashboard">
+        <button type="button" role="tab" data-dashboard="nhu-anomaly-alerts" aria-selected="true">Bất thường &amp; cảnh báo</button>
+        <button type="button" role="tab" data-dashboard="nhu-log-overview" aria-selected="false">Tổng quan log</button>
+      </div>
+      <p class="tab-note"><a class="open-link" id="dashboard-open" href="#" target="_blank" rel="noopener">Mở trong Kibana</a></p>
+      <div class="dashboard-frame" id="dashboard-frame">
+        <p class="alerts-empty">Đang kiểm tra Kibana…</p>
+      </div>
+    </section>
+  </main>
+  <footer class="page-footer"><span>LogSentinel, Trung tâm giám sát nhật ký</span><span>Đồ án Nhập môn Big Data</span></footer>
+
+  <noscript><p class="banner">Trang cần JavaScript để đọc số liệu trực tiếp.</p></noscript>
+  <script src="/app.js"></script>
+</body>
+</html>

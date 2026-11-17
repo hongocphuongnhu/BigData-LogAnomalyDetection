@@ -28,6 +28,8 @@ def column(operation: str, field: str = "___records___", label: str = "Records")
 
 def lens(identity: str, title: str, view: str, *, operation="count", field="___records___", bucket=None, breakdown=None, query="", metric_filter=None, value_format=None, comparison=None) -> str:
     columns = {"metric": column(operation, field, title)}
+    # Thieu customLabel thi Lens bo qua label, hien "Count of records" thay cho tieu de.
+    columns["metric"]["customLabel"] = True
     if metric_filter:
         columns["metric"]["filter"] = {"query": metric_filter, "language": "kuery"}
     if value_format:
@@ -113,42 +115,42 @@ def setup_rule() -> None:
 
 def main() -> None:
     (ROOT / "kibana").mkdir(exist_ok=True)
-    request("POST", "/api/data_views/data_view", {"data_view": {"id": "view-logs-all", "title": "logs-*", "name": "HTTP logs (sim + NASA)", "timeFieldName": "event_time"}, "override": True}, kibana=True)
+    request("POST", "/api/data_views/data_view", {"data_view": {"id": "view-logs-all", "title": "logs-*", "name": "Log HTTP (mô phỏng + NASA)", "timeFieldName": "event_time"}, "override": True}, kibana=True)
     overview = []
     def panel(identity, title, view, x, y, w, h, **kwargs):
         lens(identity, title, view, **kwargs)
         return ("lens", identity, x, y, w, h)
     overview.extend([
-        panel("nhu-total", "Requests", "view-logs-all", 0, 0, 12, 6),
-        panel("nhu-errors", "HTTP error rate", "view-logs-all", 12, 0, 12, 6, operation="average", field="error_flag", value_format="percent"),
-        panel("nhu-ips", "Unique clients", "view-logs-all", 24, 0, 12, 6, operation="unique_count", field="ip"),
-        panel("nhu-alert-count", "Anomalous windows", "view-log-alerts", 36, 0, 12, 6),
-        panel("nhu-requests-time", "Requests over time", "view-logs-all", 0, 6, 32, 12, bucket=("date_histogram", "event_time"), breakdown="status_code"),
-        panel("nhu-status", "HTTP status distribution", "view-logs-all", 32, 6, 16, 12, bucket=("terms", "status_code")),
-        panel("nhu-error-clients", "Top clients with 4xx errors", "view-logs-all", 0, 18, 24, 12, bucket=("terms", "ip"), query="status_code >= 400 and status_code < 500"),
-        panel("nhu-404-paths", "Top 404 paths", "view-logs-all", 24, 18, 24, 12, bucket=("terms", "path"), query="status_code: 404"),
-        panel("nhu-miss", "Cache MISS rate (sim)", "view-logs-sim", 0, 30, 24, 10, operation="average", field="cache_miss_flag", value_format="percent"),
-        panel("nhu-p95", "Latency p95 (ms, sim)", "view-logs-sim", 24, 30, 24, 10, operation="percentile", field="latency_ms", bucket=("date_histogram", "event_time")),
+        panel("nhu-total", "Số request", "view-logs-all", 0, 0, 12, 6),
+        panel("nhu-errors", "Tỷ lệ lỗi HTTP", "view-logs-all", 12, 0, 12, 6, operation="average", field="error_flag", value_format="percent"),
+        panel("nhu-ips", "Số IP khác nhau", "view-logs-all", 24, 0, 12, 6, operation="unique_count", field="ip"),
+        panel("nhu-alert-count", "Cửa sổ bất thường", "view-log-alerts", 36, 0, 12, 6),
+        panel("nhu-requests-time", "Request theo thời gian", "view-logs-all", 0, 6, 32, 12, bucket=("date_histogram", "event_time"), breakdown="status_code"),
+        panel("nhu-status", "Phân bố mã trạng thái HTTP", "view-logs-all", 32, 6, 16, 12, bucket=("terms", "status_code")),
+        panel("nhu-error-clients", "IP gặp lỗi 4xx nhiều nhất", "view-logs-all", 0, 18, 24, 12, bucket=("terms", "ip"), query="status_code >= 400 and status_code < 500"),
+        panel("nhu-404-paths", "Đường dẫn trả 404 nhiều nhất", "view-logs-all", 24, 18, 24, 12, bucket=("terms", "path"), query="status_code: 404"),
+        panel("nhu-miss", "Tỷ lệ cache MISS (mô phỏng)", "view-logs-sim", 0, 30, 24, 10, operation="average", field="cache_miss_flag", value_format="percent"),
+        panel("nhu-p95", "Độ trễ p95 (ms, mô phỏng)", "view-logs-sim", 24, 30, 24, 10, operation="percentile", field="latency_ms", bucket=("date_histogram", "event_time")),
     ])
     # Pham vi mac dinh theo du lieu batch that, khong dung last 15m cho log lich su.
     history_index = "logs-nasa" if request("GET", "/logs-nasa/_count")["count"] else "logs-sim"
     span = request("POST", f"/{history_index}/_search", {"size": 0, "aggs": {"lo": {"min": {"field": "event_time"}}, "hi": {"max": {"field": "event_time"}}}})["aggregations"]
     # Mac dinh hien NASA; khong gom 1995 va 2026 vao cung truc thoi gian.
-    dashboard("nhu-log-overview", "Log Overview", overview, span["lo"].get("value_as_string") or "now-1y", span["hi"].get("value_as_string") or "now")
-    save("search", "nhu-latest-alerts", {"title": "Latest anomalous windows", "columns": ["ip", "window_start", "score", "threshold", "cluster", "ref_cluster", "severity", "top_feature", "reason", "source"], "sort": [["detected_at", "desc"]],
+    dashboard("nhu-log-overview", "Tổng quan log", overview, span["lo"].get("value_as_string") or "now-1y", span["hi"].get("value_as_string") or "now")
+    save("search", "nhu-latest-alerts", {"title": "Cửa sổ bất thường mới nhất", "columns": ["ip", "window_start", "score", "threshold", "cluster", "ref_cluster", "severity", "top_feature", "reason", "source"], "sort": [["detected_at", "desc"]],
          "kibanaSavedObjectMeta": {"searchSourceJSON": json.dumps({"indexRefName": "kibanaSavedObjectMeta.searchSourceJSON.index", "query": {"query": "", "language": "kuery"}, "filter": []})}},
          [{"type": "index-pattern", "id": "view-log-alerts", "name": "kibanaSavedObjectMeta.searchSourceJSON.index"}])
     alerts = [
-        panel("nhu-live-alert-count", "Anomalous windows", "view-log-alerts", 0, 0, 16, 6),
-        panel("nhu-live-clients", "Affected clients", "view-log-alerts", 16, 0, 16, 6, operation="unique_count", field="ip"),
-        panel("nhu-live-history", "Rule activations", "view-alert-history", 32, 0, 16, 6),
+        panel("nhu-live-alert-count", "Cửa sổ bất thường", "view-log-alerts", 0, 0, 16, 6),
+        panel("nhu-live-clients", "Số IP bị cảnh báo", "view-log-alerts", 16, 0, 16, 6, operation="unique_count", field="ip"),
+        panel("nhu-live-history", "Số lần luật cảnh báo kích hoạt", "view-alert-history", 32, 0, 16, 6),
         ("search", "nhu-latest-alerts", 0, 6, 48, 14),
-        panel("nhu-score", "Score and threshold", "view-log-features", 0, 20, 24, 12, operation="max", field="score", bucket=("date_histogram", "window_start"), comparison="threshold"),
-        panel("nhu-clusters", "Cluster distribution (model only)", "view-log-features", 24, 20, 24, 12, bucket=("terms", "cluster")),
-        panel("nhu-labels", "Ground truth vs prediction (simulator)", "view-log-features", 0, 32, 24, 12, bucket=("terms", "ground_truth"), breakdown="is_alert", query="source: sim or source: stream"),
-        panel("nhu-reasons", "Alert reasons", "view-log-alerts", 24, 32, 24, 12, bucket=("terms", "reason")),
+        panel("nhu-score", "Điểm bất thường và ngưỡng", "view-log-features", 0, 20, 24, 12, operation="max", field="score", bucket=("date_histogram", "window_start"), comparison="threshold"),
+        panel("nhu-clusters", "Phân bố cụm KMeans", "view-log-features", 24, 20, 24, 12, bucket=("terms", "cluster")),
+        panel("nhu-labels", "Nhãn mô phỏng so với dự đoán", "view-log-features", 0, 32, 24, 12, bucket=("terms", "ground_truth"), breakdown="is_alert", query="source: sim or source: stream"),
+        panel("nhu-reasons", "Lý do cảnh báo", "view-log-alerts", 24, 32, 24, 12, bucket=("terms", "reason")),
     ]
-    dashboard("nhu-anomaly-alerts", "Anomaly & Alerts", alerts, "now-30m", "now", refresh=True)
+    dashboard("nhu-anomaly-alerts", "Bất thường & cảnh báo", alerts, "now-30m", "now", refresh=True)
     setup_rule()
     data = request("POST", "/api/saved_objects/_export", {"objects": [{"type": "dashboard", "id": "nhu-log-overview"}, {"type": "dashboard", "id": "nhu-anomaly-alerts"}], "includeReferencesDeep": True}, kibana=True, raw=True)
     (ROOT / "kibana" / "dashboards.ndjson").write_bytes(data)
