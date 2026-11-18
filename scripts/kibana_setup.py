@@ -67,7 +67,9 @@ def dashboard(identity: str, title: str, panels: list, time_from: str, time_to: 
     layout, references = [], []
     for position, (kind, panel_id, x, y, width, height) in enumerate(panels):
         name = f"panel_{position}"
-        layout.append({"panelIndex": str(position), "type": kind, "panelRefName": name, "embeddableConfig": {},
+        # Metric already renders its label inside the visualization.
+        config = {"hidePanelTitles": True} if kind == "lens" and height == 6 else {}
+        layout.append({"panelIndex": str(position), "type": kind, "panelRefName": name, "embeddableConfig": config,
                        "gridData": {"x": x, "y": y, "w": width, "h": height, "i": str(position)}, "version": "8.19.14"})
         references.append({"type": kind, "id": panel_id, "name": name})
     save("dashboard", identity, {"title": title, "description": "HDFS / Spark / Elasticsearch / Kibana - Nhu",

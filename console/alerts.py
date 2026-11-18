@@ -63,18 +63,22 @@ def typical_values(source: str) -> dict:
     return medians
 
 
-def fetch_alerts(source: str, limit: int = 50, label: str | None = None) -> dict:
+def fetch_alerts(source: str, limit: int = 50, label: str | None = None, offset: int = 0) -> dict:
     if source not in SOURCES:
         return {"ok": False, "error": "Nguồn không hợp lệ"}
     if label is not None and label not in GROUND_TRUTH_VI:
         return {"ok": False, "error": "Nhãn không hợp lệ"}
     limit = max(1, min(limit, MAX_LIMIT))
+    if offset < 0 or offset + limit > 10000:
+        return {"ok": False, "error": "Trang không hợp lệ"}
     # Stream: moi nhat len dau de thay canh bao vua sinh. Batch: detected_at la luc
     # export (giong nhau ca lo) nen xep theo diem, nang nhat len dau.
     sort = [{"detected_at": "desc"}, {"score": "desc"}] if source == "stream" else [{"score": "desc"}]
+    sort.extend([{"ip": "asc"}, {"window_start": "asc"}])
     hit_filter = [{"term": {"source": source}}] + ([{"term": {"ground_truth": label}}] if label else [])
     body = {
         "size": limit,
+        "from": offset,
         "track_total_hits": True,
         # post_filter: aggs dem tren ca index de hien so cho ca 3 tab trong mot lan goi.
         "post_filter": {"bool": {"filter": hit_filter}},

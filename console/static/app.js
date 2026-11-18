@@ -12,14 +12,13 @@ const APP_NAMES = {
   http_access_ingest: "Làm sạch log mô phỏng",
   nasa_ingest: "Làm sạch log NASA",
 };
-const INDEX_NAMES = {
-  "logs-sim": "Log mô phỏng (báo điện tử)",
-  "logs-nasa": "Log NASA thật (1995)",
-  "log-features": "Đặc trưng theo cửa sổ 5 phút",
-  "log-alerts": "Cảnh báo bất thường",
-  "alert-history": "Lịch sử luật cảnh báo Kibana",
+const TIERS = { raw: "Raw", bronze: "Bronze", silver: "Silver", gold: "Gold" };
+const TIER_NOTES = {
+  raw: "Log NASA gốc",
+  bronze: "Log mô phỏng gốc",
+  silver: "Log đã làm sạch",
+  gold: "Đặc trưng · điểm · cảnh báo",
 };
-const TIERS = { raw: "Thô (raw)", bronze: "Đồng (bronze)", silver: "Bạc — đã làm sạch", gold: "Vàng — đặc trưng, điểm" };
 const ES_STATUS = { green: "Ổn định", yellow: "Chạy, thiếu bản sao", red: "Lỗi dữ liệu" };
 
 function el(tag, attrs = {}, ...children) {
@@ -64,7 +63,10 @@ function setCard(service, state, statusText, body, footer) {
   const status = card.querySelector(".status");
   status.className = `status status-${state}`;
   status.textContent = statusText;
+  const detailsOpen = card.querySelector(".service-details")?.open;
   card.querySelector(".metrics").replaceChildren(...body);
+  const details = card.querySelector(".service-details");
+  if (details && detailsOpen) details.open = true;
   card.querySelector("footer").replaceChildren(...(footer ? [footer] : []));
 }
 
@@ -76,20 +78,20 @@ const START_HINT = () => el("span", {}, "Thử ", el("code", {}, "docker compose
 
 function renderSpark(spark, links) {
   if (!spark.ok) return setCard("spark", "down", "Mất kết nối", downBody(spark, START_HINT()), link(links.spark));
-  setCard("spark", spark.workers > 0 ? "ok" : "down", spark.workers > 0 ? "Đang chạy" : "Không có máy worker", [
-    metric(numberVi.format(spark.workers), "máy worker"),
+  setCard("spark", spark.workers > 0 ? "ok" : "down", spark.workers > 0 ? "Đang chạy" : "Không có worker", [
+    metric(numberVi.format(spark.workers), "worker"),
     metric(`${spark.cores_used}/${spark.cores}`, "lõi CPU đang dùng"),
-    metric(bytesVi(spark.memory_mb * 1024 * 1024), "bộ nhớ của cụm"),
+    metric(bytesVi(spark.memory_mb * 1024 * 1024), "RAM"),
   ], link(links.spark));
 }
 
 function renderSparkTask(spark, sparkApp, links) {
   if (!spark.ok) {
-    return setCard("spark_task", "down", "Mất kết nối", [el("p", { class: "empty" }, "Không đọc được vì cụm Spark không phản hồi.")]);
+    return setCard("spark_task", "down", "Mất kết nối", [el("p", { class: "empty" }, "Spark không phản hồi.")]);
   }
   if (!spark.apps.length) {
     return setCard("spark_task", "idle", "Chưa có tác vụ", [
-      el("p", { class: "empty" }, "Cụm đang rảnh. Bộ phát hiện sẽ được bật trong phần Mô phỏng tấn công."),
+      el("p", { class: "empty" }, "Không có job."),
     ]);
   }
   const items = spark.apps.map((app) => el("li", {},
@@ -104,15 +106,15 @@ function renderHdfs(hdfs, links) {
   if (!hdfs.ok) return setCard("hdfs", "down", "Mất kết nối", downBody(hdfs, START_HINT()), link(links.hdfs));
   const tiers = Object.entries(TIERS).map(([key, label]) => {
     const tier = hdfs.lake[key];
-    return el("li", {}, el("span", {}, label), tier
+    return el("li", {}, el("span", {}, label, el("span", { class: "tier-note" }, TIER_NOTES[key])), tier
       ? el("span", { class: "num" }, `${bytesVi(tier.bytes)}, ${numberVi.format(tier.files)} file`)
       : el("span", { class: "sub" }, "chưa có"));
   });
   setCard("hdfs", hdfs.live_nodes > 0 ? "ok" : "down", hdfs.live_nodes > 0 ? "Đang chạy" : "Không có DataNode", [
-    metric(numberVi.format(hdfs.live_nodes), "máy lưu dữ liệu"),
-    metric(numberVi.format(hdfs.blocks), "block dữ liệu"),
+    metric(numberVi.format(hdfs.live_nodes), "DataNode"),
+    metric(numberVi.format(hdfs.blocks), "block"),
     metric(bytesVi(hdfs.capacity_used), "đã dùng"),
-    el("ul", { class: "list", style: "grid-column: 1 / -1" }, ...tiers),
+    el("details", { class: "service-details" }, el("summary", {}, "Tầng dữ liệu"), el("ul", { class: "list" }, ...tiers)),
   ], link(links.hdfs_browse, "Xem thư mục /lake"));
 }
 
@@ -121,14 +123,14 @@ function renderEs(es, links) {
   const entries = Object.entries(es.indices);
   const total = entries.reduce((sum, [, index]) => sum + index.docs, 0);
   const rows = entries.map(([name, index]) => el("li", {},
-    INDEX_NAMES[name] ? el("span", {}, INDEX_NAMES[name], el("br"), el("span", { class: "sub" }, name)) : el("span", {}, name),
+    el("span", {}, name),
     el("span", { class: "num" }, numberVi.format(index.docs))));
   const healthy = es.status !== "red";
   setCard("es", healthy ? "ok" : "down", ES_STATUS[es.status] || es.status, [
     metric(numberVi.format(total), "bản ghi"),
     metric(numberVi.format(entries.length), "chỉ mục"),
-    entries.length ? el("ul", { class: "list", style: "grid-column: 1 / -1" }, ...rows)
-      : el("p", { class: "empty", style: "grid-column: 1 / -1" }, "Chưa có chỉ mục nào. Chạy scripts/run_all.py để nạp dữ liệu."),
+    entries.length ? el("details", { class: "service-details" }, el("summary", {}, `${entries.length} index`), el("ul", { class: "list" }, ...rows))
+      : el("p", { class: "empty", style: "grid-column: 1 / -1" }, "Chưa có index."),
   ], link(links.es));
 }
 
@@ -181,18 +183,16 @@ function clearOverview() {
 // --- muc 3: canh bao ---------------------------------------------------------
 const ALERT_POLL_MS = 3000;
 const dateTimeVi = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit", year: "numeric" });
-const SOURCE_NOTES = {
-  stream: "Cảnh báo do bộ phát hiện thời gian thực sinh ra, mới nhất ở trên. Chạy một kịch bản trong phần Mô phỏng tấn công để thấy cảnh báo mới xuất hiện.",
-  sim: "Kết quả chấm điểm một ngày log mô phỏng của trang báo, xếp theo điểm, nặng nhất ở trên.",
-  nasa: "Log thật của máy chủ NASA tháng 7/1995, không có nhãn. Đây là những cửa sổ lạ nhất mà model tìm ra.",
-};
 const EMPTY_NOTES = {
-  stream: "Chưa có cảnh báo thời gian thực nào. Bật bộ phát hiện và chạy một kịch bản trong phần Mô phỏng tấn công.",
-  sim: "Chưa có cảnh báo của lô mô phỏng. Chạy scripts/run_all.py --batch --serve để nạp.",
-  nasa: "Chưa có cảnh báo NASA. Chạy scripts/run_all.py --batch --serve để nạp.",
+  stream: "Chưa có cảnh báo.",
+  sim: "Chưa có cảnh báo.",
+  nasa: "Chưa có cảnh báo.",
 };
 let alertSource = "stream";
 let alertLabel = "";
+const ALERT_PAGE_SIZE = 5;
+let alertPage = 1;
+let alertRequest = 0;
 let alertsFirstLoad = true;
 const seenAlerts = {}; // theo "nguon|nhan": null = chua tai lan nao (khong to sang ca danh sach dau)
 const LABEL_ORDER = ["ddos", "scan", "brute_force", "sqli", "normal"];
@@ -209,7 +209,7 @@ function renderLabelChips(byLabel, total) {
     return button;
   };
   box.replaceChildren(
-    el("span", { class: "chips-title" }, "Theo nhãn mô phỏng:"),
+    el("span", { class: "chips-title" }, "Nhãn:"),
     chip("", "Tất cả", sorted.reduce((sum, item) => sum + item.count, 0) || total),
     ...sorted.map((item) => item.label === "normal"
       ? chip("normal", "Bình thường (báo nhầm)", item.count, "is-normal")
@@ -221,7 +221,7 @@ function alertItem(alert, isNew) {
   const bar = el("div", { class: "bar", role: "img", "aria-label": alert.score_vi || "Không có điểm" },
     el("span", { class: "fill", style: `width:${Math.min(ratio / 3, 1) * 100}%` }),
     el("span", { class: "mark", style: "left:33.33%", title: "Ngưỡng" }));
-  const when = alert.window_start ? `Khung 5 phút từ ${dateTimeVi.format(new Date(alert.window_start))}` : "";
+  const when = alert.window_start ? `${dateTimeVi.format(new Date(alert.window_start))} · 5 phút` : "";
   return el("li", { class: `alert sev-${alert.severity || "low"}${isNew ? " is-new" : ""}` },
     el("div", { class: "alert-side" },
       el("span", { class: "sev" }, `Mức ${alert.severity_vi.toLowerCase()}`),
@@ -230,26 +230,60 @@ function alertItem(alert, isNew) {
     el("div", { class: "alert-main" },
       el("p", { class: "headline" }, alert.headline),
       alert.context.length ? el("ul", { class: "context" }, ...alert.context.map((line) => el("li", {}, line))) : null,
-      alert.score_vi ? el("div", { class: "scoreline" }, bar, el("span", { class: "score-text" }, `${alert.score_vi}, ${alert.ratio_vi}`)) : null,
-      alert.ground_truth_vi ? el("p", { class: "truth" }, "Nhãn mô phỏng: ", el("b", {}, alert.ground_truth_vi),
-        el("span", {}, " — chỉ để đối chiếu, model không dùng nhãn này")) : null));
+      alert.score_vi ? el("div", { class: "scoreline" }, bar, el("span", { class: "score-text" },
+        `Điểm ${decimalVi.format(alert.score)} / ngưỡng ${decimalVi.format(alert.threshold)} · ${decimalVi.format(ratio)}×`)) : null,
+      alert.ground_truth_vi ? el("p", { class: "truth" }, "Nhãn: ", el("b", {}, alert.ground_truth_vi)) : null));
 }
 
 function alertMessage(text, isError = false) {
   return el("li", { class: `alerts-empty${isError ? " is-error" : ""}` }, text);
 }
 
+function renderAlertPagination(total) {
+  const nav = document.getElementById("alerts-pagination");
+  const pages = Math.max(1, Math.ceil(Math.min(total, 10000) / ALERT_PAGE_SIZE));
+  nav.hidden = total === 0;
+  const button = (text, page, disabled = false) => {
+    const node = el("button", { type: "button", class: "btn-ghost", "aria-label": `Trang ${page}` }, text);
+    node.disabled = disabled;
+    if (page === alertPage && /^\d+$/.test(text)) node.setAttribute("aria-current", "page");
+    node.addEventListener("click", () => {
+      alertPage = page;
+      document.getElementById("alerts-list").replaceChildren(alertMessage("Đang tải…"));
+      refreshAlerts();
+      document.getElementById("canh-bao").scrollIntoView({ block: "start" });
+    });
+    return node;
+  };
+  const numbers = [...new Set([1, alertPage - 1, alertPage, alertPage + 1, pages])]
+    .filter((page) => page >= 1 && page <= pages).sort((a, b) => a - b);
+  const controls = [button("‹", alertPage - 1, alertPage === 1)];
+  numbers.forEach((page, index) => {
+    if (index && page - numbers[index - 1] > 1) controls.push(el("span", { class: "page-gap" }, "…"));
+    controls.push(button(String(page), page));
+  });
+  controls.push(button("›", alertPage + 1, alertPage === pages));
+  nav.replaceChildren(el("span", { class: "page-summary" },
+    `${numberVi.format((alertPage - 1) * ALERT_PAGE_SIZE + 1)}–${numberVi.format(Math.min(alertPage * ALERT_PAGE_SIZE, total))} / ${numberVi.format(total)}`),
+    el("div", { class: "page-controls" }, ...controls));
+}
+
 async function refreshAlerts() {
   const source = alertSource;
   const label = alertLabel;
+  const page = alertPage;
+  const request = ++alertRequest;
   const key = `${source}|${label}`;
   const list = document.getElementById("alerts-list");
   try {
-    const query = new URLSearchParams({ source, limit: "30", ...(label ? { label } : {}) });
+    const query = new URLSearchParams({ source, limit: String(ALERT_PAGE_SIZE), offset: String((page - 1) * ALERT_PAGE_SIZE), ...(label ? { label } : {}) });
     const response = await fetch(`/api/alerts?${query}`, { cache: "no-store" });
     const data = await response.json();
-    if (source !== alertSource || label !== alertLabel) return; // nguoi xem da doi tab/nhan trong luc cho
-    if (!data.ok) return list.replaceChildren(alertMessage(`Không đọc được cảnh báo: ${data.error}.`, true));
+    if (request !== alertRequest) return;
+    if (!data.ok) {
+      document.getElementById("alerts-pagination").hidden = true;
+      return list.replaceChildren(alertMessage(`Không đọc được cảnh báo: ${data.error}.`, true));
+    }
     for (const button of document.querySelectorAll("#alerts-tabs button")) {
       const count = data.by_source[button.dataset.source] || 0;
       button.querySelector(".count").textContent = numberVi.format(count);
@@ -261,18 +295,24 @@ async function refreshAlerts() {
     }
     alertsFirstLoad = false;
     renderLabelChips(data.by_label || [], data.total);
-    if (data.missing_index) return list.replaceChildren(alertMessage("Chưa có chỉ mục log-alerts. Chạy scripts/run_all.py --serve để nạp dữ liệu."));
+    const lastPage = Math.max(1, Math.ceil(Math.min(data.total, 10000) / ALERT_PAGE_SIZE));
+    if (alertPage > lastPage) { alertPage = lastPage; return refreshAlerts(); }
+    renderAlertPagination(data.total);
+    if (data.missing_index) return list.replaceChildren(alertMessage("Chưa có index log-alerts."));
     if (!data.items.length) return list.replaceChildren(alertMessage(EMPTY_NOTES[source]));
     const seen = seenAlerts[key];
     list.replaceChildren(...data.items.map((alert) => alertItem(alert, seen != null && !seen.has(alert.doc_id))));
     seenAlerts[key] = new Set([...(seen || []), ...data.items.map((alert) => alert.doc_id)]);
   } catch (error) {
+    if (request !== alertRequest) return;
+    document.getElementById("alerts-pagination").hidden = true;
     list.replaceChildren(alertMessage("Không đọc được cảnh báo: mất kết nối tới server trung tâm.", true));
   }
 }
 
 function selectAlertLabel(label) {
   alertLabel = label;
+  alertPage = 1;
   document.getElementById("alerts-list").replaceChildren(alertMessage("Đang tải cảnh báo…"));
   refreshAlerts();
 }
@@ -280,10 +320,10 @@ function selectAlertLabel(label) {
 function selectAlertSource(source) {
   alertSource = source;
   alertLabel = "";
+  alertPage = 1;
   for (const button of document.querySelectorAll("#alerts-tabs button")) {
     button.setAttribute("aria-selected", String(button.dataset.source === source));
   }
-  document.getElementById("alerts-note").textContent = SOURCE_NOTES[source];
   document.getElementById("alerts-list").replaceChildren(alertMessage("Đang tải cảnh báo…"));
   refreshAlerts();
 }
@@ -334,7 +374,7 @@ function renderScenarioChoices(scenarios) {
     const input = el("input", { type: "radio", name: "scenario", value: item.key });
     input.checked = item.key === scenarioChoice;
     input.addEventListener("change", () => { scenarioChoice = item.key; });
-    return el("label", { class: "scenario" }, input, el("b", {}, item.label), el("span", {}, item.story));
+    return el("label", { class: "scenario" }, input, el("b", {}, item.label));
   }));
   const select = document.getElementById("check-attack");
   select.replaceChildren(...scenarios.map((item) => el("option", { value: item.key }, item.label)));
@@ -351,22 +391,22 @@ function renderLiveState(data) {
   start.disabled = data.job !== null;
   stop.disabled = Boolean(live && live.phase === "stopping");
   if (data.job === "check") {
-    state.replaceChildren(statusPill("pending", "Tạm khóa"), "Đang chạy kiểm tra tự động trong phần Kiểm tra tự động.");
+    state.replaceChildren(statusPill("pending", "Tạm khóa"), "Đang kiểm tra");
   } else if (!live) {
-    state.replaceChildren(statusPill("idle", "Đang tắt"), "Bấm Bật, sau khoảng 35 giây sẽ sẵn sàng.");
+    state.replaceChildren(statusPill("idle", "Đang tắt"), "");
   } else if (live.phase === "starting") {
-    state.replaceChildren(statusPill("pending", "Đang khởi động"), `Đã chờ ${live.elapsed_s} giây (thường mất khoảng 35 giây).`);
+    state.replaceChildren(statusPill("pending", "Đang khởi động"), `${live.elapsed_s}s / ~35s`);
   } else if (live.phase === "ready") {
-    state.replaceChildren(statusPill("ok", "Sẵn sàng"), `Dùng 2 lõi CPU, tự tắt sau ${minutesSeconds(live.remaining_s ?? 0)}.`);
+    state.replaceChildren(statusPill("ok", "Sẵn sàng"), `2 CPU · còn ${minutesSeconds(live.remaining_s ?? 0)}`);
   } else {
-    state.replaceChildren(statusPill("pending", "Đang dừng"), "Đang dọn job Spark trong container…");
+    state.replaceChildren(statusPill("pending", "Đang dừng"), "");
   }
   const ready = Boolean(live && live.phase === "ready");
   const busy = Boolean(data.scenario && data.scenario.running);
   document.getElementById("scenario-run").disabled = !ready || busy;
   document.getElementById("scenario-hint").textContent = !ready
-    ? "Bật bộ phát hiện ở bước 1 trước."
-    : busy ? "Đang chạy một kịch bản, chờ xong rồi chạy tiếp." : "";
+    ? "Chưa bật bộ phát hiện."
+    : busy ? "Kịch bản đang chạy." : "";
 }
 
 function scenarioMetric(value, label) {
@@ -433,16 +473,16 @@ document.getElementById("scenario-run").addEventListener("click", async () => {
 // --- muc 4: kiem tra tu dong --------------------------------------------------
 const CHECK_POLL_MS = 3000;
 const CHECK_STEPS = [
-  "Chờ hệ thống cảnh báo yên lặng (tối đa 110 giây)",
-  "Khởi động bộ phát hiện riêng cho bài kiểm tra",
+  "Chờ hết cảnh báo · ≤110s",
+  "Khởi động detector",
   "Phát traffic tấn công",
-  "Đã thấy cảnh báo đầu tiên, chờ luật Kibana ghi lịch sử",
-  "Khởi động lại bộ phát hiện để kiểm tra không ghi trùng",
+  "Chờ Kibana ghi nhận",
+  "Restart · kiểm tra trùng",
   "Kết quả",
 ];
 // Kich ban "none" khong cho yen lang va khong khoi dong lai: chi 3 buoc (so buoc server -> vi tri).
 const CHECK_STEPS_NORMAL = { 2: 0, 3: 1, 6: 2 };
-const CHECK_STEPS_NORMAL_TEXT = ["Khởi động bộ phát hiện riêng cho bài kiểm tra", "Phát traffic bình thường 3 phút", "Kết quả"];
+const CHECK_STEPS_NORMAL_TEXT = ["Khởi động detector", "Phát traffic bình thường 3 phút", "Kết quả"];
 const dateTimeShort = new Intl.DateTimeFormat("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" });
 
 function checkDetails(item) {
@@ -515,7 +555,7 @@ async function refreshCheck() {
   cancel.hidden = data.job !== "check";
   cancel.disabled = Boolean(data.current && data.current.cleaning);
   document.getElementById("check-hint").textContent = data.job === "live"
-    ? "Hãy dừng mô phỏng trong phần Mô phỏng tấn công trước: bài kiểm tra tự chạy bộ phát hiện riêng và cần cả 4 lõi CPU."
+    ? "Dừng mô phỏng trước."
     : "";
 }
 
@@ -531,7 +571,7 @@ document.getElementById("check-cancel").addEventListener("click", async () => {
 
 // --- muc 5: dashboard Kibana ---------------------------------------------------
 // Chi tao lai iframe khi doi tab hoac Kibana vua song lai, khong phai moi lan poll (se nap lai ca dashboard).
-let dashboardId = "nhu-anomaly-alerts";
+let dashboardId = "nhu-log-overview";
 let dashboardShown = null;
 
 function dashboardUrl(base, id, embed) {
@@ -542,15 +582,15 @@ function dashboardUrl(base, id, embed) {
 }
 
 function updateDashboard(kibana, links) {
+  if (document.getElementById("dashboard").hidden) return;
   const frame = document.getElementById("dashboard-frame");
-  document.getElementById("dashboard-open").href = dashboardUrl(links.kibana, dashboardId, false);
-  const ready = kibana.ok && kibana.level === "available";
+  document.getElementById("dashboard-open").href = dashboardUrl(links.kibana, dashboardId, false);  const ready = kibana.ok && kibana.level === "available";
   const key = ready ? dashboardId : "down";
   if (key === dashboardShown) return;
   dashboardShown = key;
   if (!ready) {
     return frame.replaceChildren(el("p", { class: "alerts-empty is-error" },
-      kibana.ok ? "Kibana đang khởi động, dashboard sẽ hiện khi sẵn sàng." : `Kibana chưa sẵn sàng: ${kibana.error}.`));
+      kibana.ok ? "Kibana đang khởi động." : `Kibana chưa sẵn sàng: ${kibana.error}.`));
   }
   frame.replaceChildren(el("iframe", {
     src: dashboardUrl(links.kibana, dashboardId, true),
@@ -594,21 +634,47 @@ function initTheme() {
 
 initTheme();
 
-// Keep the sidebar location in sync with the section being read.
-const sectionLinks = [...document.querySelectorAll(".sections a")];
-function setActiveSection(id) {
-  for (const item of sectionLinks) {
-    if (item.hash === `#${id}`) item.setAttribute("aria-current", "location");
-    else item.removeAttribute("aria-current");
+// Workspace tabs preserve mounted panels and in-progress operations.
+const sectionLinks = [...document.querySelectorAll(".sections [role=tab]")];
+const workspaceNames = { "ha-tang": "Tổng quan", "mo-phong": "Mô phỏng", "canh-bao": "Cảnh báo", "kiem-tra": "Kiểm tra", dashboard: "Kibana" };
+function showWorkspace(id, focus = false) {
+  if (!Object.hasOwn(workspaceNames, id)) id = "ha-tang";
+  for (const tab of sectionLinks) {
+    const selected = tab.hash === `#${id}`;
+    tab.setAttribute("aria-selected", String(selected));
+    tab.tabIndex = selected ? 0 : -1;
+    document.getElementById(tab.getAttribute("aria-controls")).hidden = !selected;
+    if (selected && focus) tab.focus();
   }
+  document.getElementById("workspace-title").textContent = workspaceNames[id];
+  document.title = `${workspaceNames[id]} — LogSentinel`;
+  window.scrollTo({ top: 0, behavior: "instant" });
+  if (id === "dashboard") refresh();
 }
-const sectionObserver = new IntersectionObserver((entries) => {
-  const visible = entries.filter((entry) => entry.isIntersecting)
-    .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-  if (visible.length) setActiveSection(visible[0].target.id);
-}, { rootMargin: "-5% 0px -55% 0px", threshold: 0 });
-document.querySelectorAll("main > .section").forEach((section) => sectionObserver.observe(section));
-sectionLinks.forEach((item) => item.addEventListener("click", () => setActiveSection(item.hash.slice(1))));
+sectionLinks.forEach((tab, index) => {
+  tab.addEventListener("keydown", (event) => {
+    let target;
+    if (event.key === "ArrowRight") target = (index + 1) % sectionLinks.length;
+    if (event.key === "ArrowLeft") target = (index - 1 + sectionLinks.length) % sectionLinks.length;
+    if (event.key === "Home") target = 0;
+    if (event.key === "End") target = sectionLinks.length - 1;
+    if (target === undefined) return;
+    event.preventDefault();
+    sectionLinks[target].click();
+    sectionLinks[target].focus();
+  });
+});
+document.addEventListener("click", (event) => {
+  const link = event.target.closest('a[href^="#"]');
+  const id = link?.hash.slice(1);
+  if (!Object.hasOwn(workspaceNames, id)) return;
+  event.preventDefault();
+  if (location.hash !== `#${id}`) history.pushState(null, "", `#${id}`);
+  showWorkspace(id);
+});
+window.addEventListener("hashchange", () => showWorkspace(location.hash.slice(1)));
+window.addEventListener("popstate", () => showWorkspace(location.hash.slice(1)));
+showWorkspace(location.hash.slice(1));
 
 refresh();
 setInterval(refresh, POLL_MS);

@@ -96,11 +96,12 @@ class ConsoleHandler(BaseHTTPRequestHandler):
             params = parse_qs(query)
             try:
                 limit = int(params.get("limit", ["50"])[0])
+                offset = int(params.get("offset", ["0"])[0])
             except ValueError:
-                return self._error(HTTPStatus.BAD_REQUEST, "limit phải là số")
+                return self._error(HTTPStatus.BAD_REQUEST, "limit và offset phải là số")
             label = params.get("label", [None])[0] or None
-            result = fetch_alerts(params.get("source", ["stream"])[0], limit, label)
-            if result.get("error") in ("Nguồn không hợp lệ", "Nhãn không hợp lệ"):
+            result = fetch_alerts(params.get("source", ["stream"])[0], limit, label, offset)
+            if result.get("error") in ("Nguồn không hợp lệ", "Nhãn không hợp lệ", "Trang không hợp lệ"):
                 return self._json(result, HTTPStatus.BAD_REQUEST)
             return self._json(result)
         if path == "/api/live/status":

@@ -130,6 +130,11 @@ services:
       # Bat buoc de dung Alerting (rule + connector): Kibana can khoa ma hoa
       # saved object, thieu khoa nay muc Rules se bi khoa.
       - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${KIBANA_ENCRYPTION_KEY}
+      # Tat popup "Your data is not secure" va banner telemetry: cum demo chay local khong bat
+      # security, hai popup nay che dashboard nhung trong trang console.
+      - XPACK_SECURITY_SHOWINSECURECLUSTERWARNING=false
+      - TELEMETRY_OPTIN=false
+      - TELEMETRY_ALLOWCHANGINGOPTINSTATUS=false
     ports:
       - "5601:5601"
     networks:
